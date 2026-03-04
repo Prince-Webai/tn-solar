@@ -13,7 +13,10 @@ export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, cus
     const handlePrint = () => window.print();
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+        <div
+            className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md overflow-y-auto flex items-start justify-center"
+            onClick={onClose}
+        >
             {/* Toolbar */}
             <div className="print:hidden sticky top-0 z-10 bg-slate-800 text-white px-6 py-3 flex items-center justify-between shadow-lg">
                 <div className="flex items-center gap-3">
@@ -23,25 +26,35 @@ export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, cus
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handlePrint}
-                        className="flex items-center gap-2 bg-delaval-blue hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+                        className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
                     >
                         🖨️ Print / Save PDF
                     </button>
                     <button
                         onClick={onClose}
-                        className="text-slate-300 hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors hover:bg-slate-700"
+                        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition-all transform active:scale-95 shadow-lg"
                     >
-                        ✕ Close
+                        ✕ Close / Go Back
                     </button>
                 </div>
             </div>
 
             {/* A4 Document */}
-            <div className="flex justify-center py-8 px-4 print:py-0 print:px-0">
+            <div className="py-8 px-4 print:py-0 print:px-0 w-full flex justify-center" onClick={e => e.stopPropagation()}>
                 <div
-                    className="bg-white w-full max-w-[210mm] shadow-2xl print:shadow-none"
+                    className="bg-white w-full max-w-[210mm] shadow-2xl print:shadow-none relative"
                     style={{ fontFamily: 'Arial, sans-serif', fontSize: '9pt', color: '#000' }}
                 >
+                    {/* Floating exit hint for desktop */}
+                    <div className="absolute -right-16 top-0 print:hidden hidden xl:block">
+                        <button
+                            onClick={onClose}
+                            className="bg-white/10 hover:bg-white/20 text-white/50 hover:text-white p-3 rounded-full transition-all"
+                            title="Close Report"
+                        >
+                            <span className="text-2xl">✕</span>
+                        </button>
+                    </div>
                     {/* Document Header */}
                     <div style={{ borderBottom: '3px solid #003875', padding: '12px 20px 8px', background: '#f0f4ff' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
