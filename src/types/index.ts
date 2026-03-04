@@ -145,3 +145,19 @@ export interface Settings {
     webhook_url: string;
     updated_at: string;
 }
+
+export interface ServiceReport {
+    id: string;
+    created_at: string;
+    job_id: string;
+    customer_id?: string;
+    report_data: any; // ReportState JSON blob
+    tester?: string;
+    test_date?: string;
+    machine_make?: string;
+    // Joins
+    jobs?: Job;
+    customers?: Customer;
+}
+
+export * from './report';

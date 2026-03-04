@@ -5,12 +5,15 @@ import SearchableSelect from '../components/SearchableSelect';
 import { supabase } from '../lib/supabase';
 import { Job, JobItem, InventoryItem } from '../types';
 import { generateJobReport } from '../lib/pdfGenerator';
+import { MilkingMachineTestReport } from '../components/forms/MilkingMachineTestReport';
+import { ReportState } from '../types';
 const JobDetails = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [job, setJob] = useState<Job | null>(null);
     const [items, setItems] = useState<JobItem[]>([]);
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const [isGeneratingReport, setIsGeneratingReport] = useState(false);
     const [newItem, setNewItem] = useState({
         description: '',
         quantity: 1,
@@ -88,7 +91,8 @@ const JobDetails = () => {
         }
     };
 
-    const [mobileTab, setMobileTab] = useState<'details' | 'parts' | 'labor'>('details');
+    const [mobileTab, setMobileTab] = useState<'details' | 'parts' | 'labor' | 'reports'>('details');
+    const [desktopTab, setDesktopTab] = useState<'items' | 'reports'>('items');
 
     if (!job) return <div className="p-8">Loading...</div>;
 
@@ -96,6 +100,35 @@ const JobDetails = () => {
     const laborItems = items.filter(i => i.type === 'labor' || i.type === 'service');
     const totalPartsCost = partsItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
     const totalLaborCost = laborItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+
+    if (isGeneratingReport && job) {
+        return (
+            <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 md:p-12 overflow-y-auto">
+                <MilkingMachineTestReport
+                    job={job}
+                    customer={job.customers}
+                    onSubmit={async (reportData: ReportState) => {
+                        const { error } = await supabase
+                            .from('service_reports')
+                            .insert({
+                                job_id: job.id,
+                                customer_id: job.customer_id,
+                                report_data: reportData,
+                                tester: reportData.tester,
+                                test_date: reportData.date || null,
+                                machine_make: reportData.machineMake || null,
+                            });
+                        if (error) {
+                            alert('Error saving report: ' + error.message);
+                        } else {
+                            setIsGeneratingReport(false);
+                        }
+                    }}
+                    onCancel={() => setIsGeneratingReport(false)}
+                />
+            </div>
+        );
+    }
 
     return (
         <>
@@ -124,106 +157,152 @@ const JobDetails = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 space-y-6">
                         <div className="section-card p-6">
-                            <h2 className="text-lg font-bold mb-4">Service Items</h2>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead className="bg-slate-50">
-                                        <tr>
-                                            <th className="px-4 py-2">Description</th>
-                                            <th className="px-4 py-2">Qty</th>
-                                            <th className="px-4 py-2">Cost</th>
-                                            {job.status !== 'completed' && <th className="px-4 py-2">Action</th>}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {items.map(item => (
-                                            <tr key={item.id} className="border-t border-slate-100">
-                                                <td className="px-4 py-3">{item.description}</td>
-                                                <td className="px-4 py-3">{item.quantity}</td>
-                                                <td className="px-4 py-3">€{item.unit_price}</td>
-                                                {job.status !== 'completed' && (
-                                                    <td className="px-4 py-3">
-                                                        <button onClick={() => handleDeleteItem(item.id)} className="text-red-500 hover:bg-red-50 p-1 rounded">
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </td>
-                                                )}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            <div className="flex items-center gap-4 mb-4 border-b border-slate-200">
+                                <button
+                                    onClick={() => setDesktopTab('items')}
+                                    className={`py-2 px-1 font-bold text-sm border-b-2 transition-colors ${desktopTab === 'items' ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Service Items
+                                </button>
+                                <button
+                                    onClick={() => setDesktopTab('reports')}
+                                    className={`py-2 px-1 font-bold text-sm border-b-2 transition-colors ${desktopTab === 'reports' ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Service Reports
+                                </button>
                             </div>
 
-                            {job.status !== 'completed' && (
-                                <div className="mt-4 bg-slate-50 p-4 rounded-lg space-y-3">
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <SearchableSelect
-                                                label="Add Code / Product"
-                                                options={inventory.map(inv => ({ value: inv.id, label: `${inv.name} (€${inv.sell_price})` }))}
-                                                value=""
-                                                onChange={(val) => {
-                                                    const item = inventory.find(i => i.id === val);
-                                                    if (item) {
-                                                        setNewItem({
-                                                            ...newItem,
-                                                            description: item.name,
-                                                            unit_price: item.sell_price,
-                                                            type: 'part'
-                                                        });
-                                                    }
-                                                }}
-                                                placeholder="Select generic product..."
-                                                icon={<Package size={16} />}
-                                            />
-                                        </div>
-                                        <div className="w-1/3">
-                                            <SearchableSelect
-                                                label="Type"
-                                                searchable={false}
-                                                options={[
-                                                    { value: 'part', label: 'Part' },
-                                                    { value: 'labor', label: 'Labor' },
-                                                    { value: 'service', label: 'Service' }
-                                                ]}
-                                                value={newItem.type}
-                                                onChange={(val) => setNewItem({ ...newItem, type: val as any })}
-                                                icon={<Clock size={16} />}
-                                            />
-                                        </div>
+                            {desktopTab === 'items' && (
+                                <>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
+                                            <thead className="bg-slate-50">
+                                                <tr>
+                                                    <th className="px-4 py-2">Description</th>
+                                                    <th className="px-4 py-2">Qty</th>
+                                                    <th className="px-4 py-2">Cost</th>
+                                                    {job.status !== 'completed' && <th className="px-4 py-2">Action</th>}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {items.map(item => (
+                                                    <tr key={item.id} className="border-t border-slate-100">
+                                                        <td className="px-4 py-3">{item.description}</td>
+                                                        <td className="px-4 py-3">{item.quantity}</td>
+                                                        <td className="px-4 py-3">€{item.unit_price}</td>
+                                                        {job.status !== 'completed' && (
+                                                            <td className="px-4 py-3">
+                                                                <button onClick={() => handleDeleteItem(item.id)} className="text-red-500 hover:bg-red-50 p-1 rounded">
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            </td>
+                                                        )}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
 
-                                    <div className="flex gap-2 items-end">
-                                        <div className="flex-1">
-                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Description</label>
-                                            <input
-                                                className="w-full p-2 border rounded"
-                                                placeholder="Item description or service details..."
-                                                value={newItem.description}
-                                                onChange={e => setNewItem({ ...newItem, description: e.target.value })}
-                                            />
+                                    {job.status !== 'completed' && (
+                                        <div className="mt-4 bg-slate-50 p-4 rounded-lg space-y-3">
+                                            <div className="flex gap-4">
+                                                <div className="flex-1">
+                                                    <SearchableSelect
+                                                        label="Add Code / Product"
+                                                        options={inventory.map(inv => ({ value: inv.id, label: `${inv.name} (€${inv.sell_price})` }))}
+                                                        value=""
+                                                        onChange={(val) => {
+                                                            const item = inventory.find(i => i.id === val);
+                                                            if (item) {
+                                                                setNewItem({
+                                                                    ...newItem,
+                                                                    description: item.name,
+                                                                    unit_price: item.sell_price,
+                                                                    type: 'part'
+                                                                });
+                                                            }
+                                                        }}
+                                                        placeholder="Select generic product..."
+                                                        icon={<Package size={16} />}
+                                                    />
+                                                </div>
+                                                <div className="w-1/3">
+                                                    <SearchableSelect
+                                                        label="Type"
+                                                        searchable={false}
+                                                        options={[
+                                                            { value: 'part', label: 'Part' },
+                                                            { value: 'labor', label: 'Labor' },
+                                                            { value: 'service', label: 'Service' }
+                                                        ]}
+                                                        value={newItem.type}
+                                                        onChange={(val) => setNewItem({ ...newItem, type: val as any })}
+                                                        icon={<Clock size={16} />}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-2 items-end">
+                                                <div className="flex-1">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Description</label>
+                                                    <input
+                                                        className="w-full p-2 border rounded"
+                                                        placeholder="Item description or service details..."
+                                                        value={newItem.description}
+                                                        onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="w-20">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Qty</label>
+                                                    <input
+                                                        type="number"
+                                                        className="w-full p-2 border rounded"
+                                                        value={newItem.quantity}
+                                                        onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
+                                                    />
+                                                </div>
+                                                <div className="w-24">
+                                                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Cost (€)</label>
+                                                    <input
+                                                        type="number"
+                                                        className="w-full p-2 border rounded"
+                                                        value={newItem.unit_price}
+                                                        onChange={e => setNewItem({ ...newItem, unit_price: Number(e.target.value) })}
+                                                    />
+                                                </div>
+                                                <button onClick={handleAddItem} className="bg-delaval-blue text-white p-2.5 rounded hover:bg-delaval-dark-blue">
+                                                    <Plus size={20} />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="w-20">
-                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Qty</label>
-                                            <input
-                                                type="number"
-                                                className="w-full p-2 border rounded"
-                                                value={newItem.quantity}
-                                                onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
-                                            />
+                                    )}
+                                </>
+                            )}
+
+                            {desktopTab === 'reports' && (
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+                                    <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50 rounded-t-xl">
+                                        <div>
+                                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                                <FileText className="w-5 h-5 text-delaval-blue" />
+                                                Service Reports
+                                            </h2>
+                                            <p className="text-sm text-slate-500 mt-1">Generate and view test reports</p>
                                         </div>
-                                        <div className="w-24">
-                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Cost (€)</label>
-                                            <input
-                                                type="number"
-                                                className="w-full p-2 border rounded"
-                                                value={newItem.unit_price}
-                                                onChange={e => setNewItem({ ...newItem, unit_price: Number(e.target.value) })}
-                                            />
-                                        </div>
-                                        <button onClick={handleAddItem} className="bg-delaval-blue text-white p-2.5 rounded hover:bg-delaval-dark-blue">
-                                            <Plus size={20} />
+                                        <button
+                                            onClick={() => setIsGeneratingReport(true)}
+                                            className="bg-delaval-blue text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            New Report
                                         </button>
+                                    </div>
+                                    <div className="p-12 text-center text-slate-500">
+                                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <FileText className="w-8 h-8 text-slate-400" />
+                                        </div>
+                                        <p className="font-medium text-slate-700">No reports generated yet</p>
+                                        <p className="text-sm mt-1">Click the button above to create a new IMQCS Test Report.</p>
                                     </div>
                                 </div>
                             )}
@@ -310,11 +389,13 @@ const JobDetails = () => {
                             </p>
                         </div>
                     </div>
+                </div>
 
-                    {/* Status Update */}
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Current Status</label>
-                        {job.status === 'completed' ? (
+                {/* Status Update */}
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Current Status</label>
+                    {
+                        job.status === 'completed' ? (
                             <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-3 rounded-lg border border-green-200 font-bold">
                                 <CheckCircle size={18} /> Completed
                             </div>
@@ -339,257 +420,291 @@ const JobDetails = () => {
                                     }
                                 }}
                             />
-                        )}
-                    </div>
+                        )
+                    }
+                </div>
 
-                    {/* Equipment Card */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                        <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
-                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Equipment</h3>
+                {/* Equipment Card */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
+                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Equipment</h3>
+                    </div>
+                    <div className="p-4">
+                        <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                            <span className="text-sm text-slate-500">Machine</span>
+                            <span className="text-sm font-bold text-slate-900 text-right">DeLaval VMS V300</span> {/* Hardcoded mock data matching design */}
                         </div>
-                        <div className="p-4">
-                            <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                                <span className="text-sm text-slate-500">Machine</span>
-                                <span className="text-sm font-bold text-slate-900 text-right">DeLaval VMS V300</span> {/* Hardcoded mock data matching design */}
-                            </div>
-                            <div className="flex justify-between items-center py-2 border-b border-slate-50">
-                                <span className="text-sm text-slate-500">Serial</span>
-                                <span className="text-sm font-bold text-slate-900 text-right">VMS-2019-00412</span> {/* Hardcoded mock data matching design */}
-                            </div>
-                            <div className="flex justify-between items-center py-2">
-                                <span className="text-sm text-slate-500">Installed</span>
-                                <span className="text-sm font-bold text-slate-900 text-right">Mar 2025</span> {/* Hardcoded mock data matching design */}
-                            </div>
+                        <div className="flex justify-between items-center py-2 border-b border-slate-50">
+                            <span className="text-sm text-slate-500">Serial</span>
+                            <span className="text-sm font-bold text-slate-900 text-right">VMS-2019-00412</span> {/* Hardcoded mock data matching design */}
+                        </div>
+                        <div className="flex justify-between items-center py-2">
+                            <span className="text-sm text-slate-500">Installed</span>
+                            <span className="text-sm font-bold text-slate-900 text-right">Mar 2025</span> {/* Hardcoded mock data matching design */}
                         </div>
                     </div>
+                </div>
 
-                    {/* Service Tabs */}
-                    <div className="flex border-b border-slate-200 sticky top-[64px] bg-[#F8FAFB] z-10 pt-2 px-4">
-                        <button
-                            className={`flex-1 pb-3 text-sm font-bold text-center border-b-2 transition-colors ${mobileTab === 'details' ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500'}`}
-                            onClick={() => setMobileTab('details')}
-                        >
-                            DETAILS
-                        </button>
-                        <button
-                            className={`flex-1 pb-3 text-sm font-bold text-center border-b-2 transition-colors ${mobileTab === 'parts' ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500'}`}
-                            onClick={() => setMobileTab('parts')}
-                        >
-                            PARTS
-                        </button>
-                        <button
-                            className={`flex-1 pb-3 text-sm font-bold text-center border-b-2 transition-colors ${mobileTab === 'labor' ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500'}`}
-                            onClick={() => setMobileTab('labor')}
-                        >
-                            LABOUR
-                        </button>
-                    </div>
+                {/* Service Tabs */}
+                <div className="flex border-b border-slate-200 sticky top-[64px] bg-[#F8FAFB] z-10 pt-2 px-4">
+                    <button
+                        className={`flex-1 pb-3 text-sm font-bold text-center border-b-2 transition-colors ${mobileTab === 'details' ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500'}`}
+                        onClick={() => setMobileTab('details')}
+                    >
+                        DETAILS
+                    </button>
+                    <button
+                        className={`flex-1 pb-3 text-sm font-bold text-center border-b-2 transition-colors ${mobileTab === 'parts' ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500'}`}
+                        onClick={() => setMobileTab('parts')}
+                    >
+                        PARTS
+                    </button>
+                    <button
+                        className={`flex-1 pb-3 text-sm font-bold text-center border-b-2 transition-colors ${mobileTab === 'labor' ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500'}`}
+                        onClick={() => setMobileTab('labor')}
+                    >
+                        LABOUR
+                    </button>
+                    <button
+                        className={`flex-1 pb-3 text-sm font-bold text-center border-b-2 transition-colors ${mobileTab === 'reports' as any ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500'}`}
+                        onClick={() => setMobileTab('reports' as any)}
+                    >
+                        REPORTS
+                    </button>
+                </div>
 
-                    {/* Tab Content */}
-                    <div className="pt-2">
-                        {mobileTab === 'details' && (
-                            <div className="space-y-4">
-                                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Issue Description</h3>
-                                    <p className="text-sm text-slate-700">{job.notes || 'No description provided.'}</p>
-                                </div>
-                                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Schedule & Assignment</h3>
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-500">Date</span>
-                                            <span className="font-medium">{job.date_scheduled ? new Date(job.date_scheduled).toLocaleDateString() : 'Unscheduled'}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-500">Engineer</span>
-                                            <span className="font-medium">{job.engineer_name || 'Unassigned'}</span>
-                                        </div>
+                {/* Tab Content */}
+                <div className="pt-2">
+                    {mobileTab === 'details' && (
+                        <div className="space-y-4">
+                            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Issue Description</h3>
+                                <p className="text-sm text-slate-700">{job.notes || 'No description provided.'}</p>
+                            </div>
+                            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Schedule &amp; Assignment</h3>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Date</span>
+                                        <span className="font-medium">{job.date_scheduled ? new Date(job.date_scheduled).toLocaleDateString() : 'Unscheduled'}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Engineer</span>
+                                        <span className="font-medium">{job.engineer_name || 'Unassigned'}</span>
                                     </div>
                                 </div>
-                                {/* Actions */}
-                                <div className="grid grid-cols-2 gap-3 mt-6">
-                                    <button onClick={generatePDF} className="flex items-center justify-center gap-2 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold text-sm">
-                                        <FileText size={18} /> PDF Report
+                            </div>
+                            {/* Actions */}
+                            <div className="grid grid-cols-2 gap-3 mt-6">
+                                <button onClick={generatePDF} className="flex items-center justify-center gap-2 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold text-sm">
+                                    <FileText size={18} /> PDF Report
+                                </button>
+                                {job.status === 'completed' ? (
+                                    <button onClick={() => navigate(`/invoices/builder?jobId=${job.id}`)} className="flex items-center justify-center gap-2 bg-delaval-blue text-white py-3 rounded-xl font-bold text-sm shadow-md shadow-blue-900/10">
+                                        <Receipt size={18} /> Invoice
                                     </button>
-                                    {job.status === 'completed' ? (
-                                        <button onClick={() => navigate(`/invoices/builder?jobId=${job.id}`)} className="flex items-center justify-center gap-2 bg-delaval-blue text-white py-3 rounded-xl font-bold text-sm shadow-md shadow-blue-900/10">
-                                            <Receipt size={18} /> Invoice
-                                        </button>
-                                    ) : (
-                                        <button className="flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-xl font-bold text-sm shadow-md shadow-green-900/10">
-                                            Mark Done
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {mobileTab === 'parts' && (
-                            <div className="space-y-4">
-                                {/* Add Part Form (Mobile logic reused from desktop) */}
-                                {job.status !== 'completed' && (
-                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-6 space-y-3">
-                                        <h3 className="text-sm font-bold text-slate-900">Add Part</h3>
-                                        <SearchableSelect
-                                            label=""
-                                            options={inventory.map(inv => ({ value: inv.id, label: `${inv.name} (€${inv.sell_price})` }))}
-                                            value=""
-                                            onChange={(val) => {
-                                                const item = inventory.find(i => i.id === val);
-                                                if (item) {
-                                                    setNewItem({
-                                                        ...newItem,
-                                                        description: item.name,
-                                                        unit_price: item.sell_price,
-                                                        type: 'part'
-                                                    });
-                                                }
-                                            }}
-                                            placeholder="Search parts catalog..."
-                                        />
-                                        <div className="flex gap-3 pt-2">
-                                            <div className="w-1/3">
-                                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Qty</label>
-                                                <input
-                                                    type="number"
-                                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-                                                    value={newItem.quantity}
-                                                    onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
-                                                />
-                                            </div>
-                                            <div className="w-1/3">
-                                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Price (€)</label>
-                                                <input
-                                                    type="number"
-                                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-                                                    value={newItem.unit_price}
-                                                    onChange={e => setNewItem({ ...newItem, unit_price: Number(e.target.value) })}
-                                                />
-                                            </div>
-                                            <div className="w-1/3 flex items-end">
-                                                <button
-                                                    onClick={() => {
-                                                        setNewItem(prev => ({ ...prev, type: 'part' }));
-                                                        handleAddItem();
-                                                    }}
-                                                    className="w-full bg-delaval-blue text-white p-2.5 rounded-lg flex items-center justify-center hover:bg-delaval-dark-blue h-[42px]"
-                                                >
-                                                    <Plus size={20} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                ) : (
+                                    <button className="flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-xl font-bold text-sm shadow-md shadow-green-900/10">
+                                        Mark Done
+                                    </button>
                                 )}
-
-                                {/* Parts List */}
-                                <div className="flex justify-between items-center px-1 mb-2">
-                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Used Parts ({partsItems.length})</span>
-                                    <span className="text-sm font-bold text-slate-900">Total: €{totalPartsCost.toFixed(2)}</span>
-                                </div>
-                                <div className="space-y-3">
-                                    {partsItems.length === 0 ? (
-                                        <p className="text-sm text-slate-500 text-center py-4 bg-white rounded-xl border border-slate-100">No parts added yet.</p>
-                                    ) : (
-                                        partsItems.map(item => (
-                                            <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center group">
-                                                <div>
-                                                    <div className="font-bold text-slate-900 text-sm">{item.description}</div>
-                                                    <div className="text-sm text-slate-500 mt-0.5">Qty {item.quantity} × €{item.unit_price}</div>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</span>
-                                                    {job.status !== 'completed' && (
-                                                        <button onClick={() => handleDeleteItem(item.id)} className="text-slate-300 hover:text-red-500 p-2">
-                                                            <Trash2 size={18} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
                             </div>
-                        )}
+                        </div>
+                    )}
 
-                        {mobileTab === 'labor' && (
-                            <div className="space-y-4">
-                                {/* Add Labor Form */}
-                                {job.status !== 'completed' && (
-                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-6 space-y-3">
-                                        <h3 className="text-sm font-bold text-slate-900">Add Time/Labour</h3>
-                                        <div>
-                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Description</label>
+                    {mobileTab === 'parts' && (
+                        <div className="space-y-4">
+                            {/* Add Part Form */}
+                            {job.status !== 'completed' && (
+                                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-6 space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-900">Add Part</h3>
+                                    <SearchableSelect
+                                        label=""
+                                        options={inventory.map(inv => ({ value: inv.id, label: `${inv.name} (€${inv.sell_price})` }))}
+                                        value=""
+                                        onChange={(val) => {
+                                            const item = inventory.find(i => i.id === val);
+                                            if (item) {
+                                                setNewItem({
+                                                    ...newItem,
+                                                    description: item.name,
+                                                    unit_price: item.sell_price,
+                                                    type: 'part'
+                                                });
+                                            }
+                                        }}
+                                        placeholder="Search parts catalog..."
+                                    />
+                                    <div className="flex gap-3 pt-2">
+                                        <div className="w-1/3">
+                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Qty</label>
                                             <input
+                                                type="number"
                                                 className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-                                                placeholder="e.g. Travel time, Service hours..."
-                                                value={newItem.description}
-                                                onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+                                                value={newItem.quantity}
+                                                onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
                                             />
                                         </div>
-                                        <div className="flex gap-3 pt-2">
-                                            <div className="w-1/3">
-                                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Hours</label>
-                                                <input
-                                                    type="number"
-                                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-                                                    value={newItem.quantity}
-                                                    onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
-                                                />
-                                            </div>
-                                            <div className="w-1/3">
-                                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Rate (€)</label>
-                                                <input
-                                                    type="number"
-                                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-                                                    value={newItem.unit_price}
-                                                    onChange={e => setNewItem({ ...newItem, unit_price: Number(e.target.value) })}
-                                                />
-                                            </div>
-                                            <div className="w-1/3 flex items-end">
-                                                <button
-                                                    onClick={() => {
-                                                        setNewItem(prev => ({ ...prev, type: 'labor' }));
-                                                        handleAddItem();
-                                                    }}
-                                                    className="w-full bg-delaval-blue text-white p-2.5 rounded-lg flex items-center justify-center hover:bg-delaval-dark-blue h-[42px]"
-                                                >
-                                                    <Plus size={20} />
-                                                </button>
-                                            </div>
+                                        <div className="w-1/3">
+                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Price (€)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                                                value={newItem.unit_price}
+                                                onChange={e => setNewItem({ ...newItem, unit_price: Number(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="w-1/3 flex items-end">
+                                            <button
+                                                onClick={() => {
+                                                    setNewItem(prev => ({ ...prev, type: 'part' }));
+                                                    handleAddItem();
+                                                }}
+                                                className="w-full bg-delaval-blue text-white p-2.5 rounded-lg flex items-center justify-center hover:bg-delaval-dark-blue h-[42px]"
+                                            >
+                                                <Plus size={20} />
+                                            </button>
                                         </div>
                                     </div>
-                                )}
+                                </div>
+                            )}
 
-                                {/* Labor List */}
-                                <div className="flex justify-between items-center px-1 mb-2">
-                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Labour Log ({laborItems.length})</span>
-                                    <span className="text-sm font-bold text-slate-900">Total: €{totalLaborCost.toFixed(2)}</span>
-                                </div>
-                                <div className="space-y-3">
-                                    {laborItems.length === 0 ? (
-                                        <p className="text-sm text-slate-500 text-center py-4 bg-white rounded-xl border border-slate-100">No time added yet.</p>
-                                    ) : (
-                                        laborItems.map(item => (
-                                            <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center">
-                                                <div>
-                                                    <div className="font-bold text-slate-900 text-sm">{item.description}</div>
-                                                    <div className="text-sm text-slate-500 mt-0.5">{item.quantity} hrs @ €{item.unit_price}/hr</div>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</span>
-                                                    {job.status !== 'completed' && (
-                                                        <button onClick={() => handleDeleteItem(item.id)} className="text-slate-300 hover:text-red-500 p-2">
-                                                            <Trash2 size={18} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
+                            {/* Parts List */}
+                            <div className="flex justify-between items-center px-1 mb-2">
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Used Parts ({partsItems.length})</span>
+                                <span className="text-sm font-bold text-slate-900">Total: €{totalPartsCost.toFixed(2)}</span>
                             </div>
-                        )}
-                    </div>
+                            <div className="space-y-3">
+                                {partsItems.length === 0 ? (
+                                    <p className="text-sm text-slate-500 text-center py-4 bg-white rounded-xl border border-slate-100">No parts added yet.</p>
+                                ) : (
+                                    partsItems.map(item => (
+                                        <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center group">
+                                            <div>
+                                                <div className="font-bold text-slate-900 text-sm">{item.description}</div>
+                                                <div className="text-sm text-slate-500 mt-0.5">Qty {item.quantity} × €{item.unit_price}</div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</span>
+                                                {job.status !== 'completed' && (
+                                                    <button onClick={() => handleDeleteItem(item.id)} className="text-slate-300 hover:text-red-500 p-2">
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {mobileTab === 'labor' && (
+                        <div className="space-y-4">
+                            {/* Add Labor Form */}
+                            {job.status !== 'completed' && (
+                                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-6 space-y-3">
+                                    <h3 className="text-sm font-bold text-slate-900">Add Time/Labour</h3>
+                                    <div>
+                                        <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Description</label>
+                                        <input
+                                            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                                            placeholder="e.g. Travel time, Service hours..."
+                                            value={newItem.description}
+                                            onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="flex gap-3 pt-2">
+                                        <div className="w-1/3">
+                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Hours</label>
+                                            <input
+                                                type="number"
+                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                                                value={newItem.quantity}
+                                                onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="w-1/3">
+                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Rate (€)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                                                value={newItem.unit_price}
+                                                onChange={e => setNewItem({ ...newItem, unit_price: Number(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="w-1/3 flex items-end">
+                                            <button
+                                                onClick={() => {
+                                                    setNewItem(prev => ({ ...prev, type: 'labor' }));
+                                                    handleAddItem();
+                                                }}
+                                                className="w-full bg-delaval-blue text-white p-2.5 rounded-lg flex items-center justify-center hover:bg-delaval-dark-blue h-[42px]"
+                                            >
+                                                <Plus size={20} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Labor List */}
+                            <div className="flex justify-between items-center px-1 mb-2">
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Labour Log ({laborItems.length})</span>
+                                <span className="text-sm font-bold text-slate-900">Total: €{totalLaborCost.toFixed(2)}</span>
+                            </div>
+                            <div className="space-y-3">
+                                {laborItems.length === 0 ? (
+                                    <p className="text-sm text-slate-500 text-center py-4 bg-white rounded-xl border border-slate-100">No time added yet.</p>
+                                ) : (
+                                    laborItems.map(item => (
+                                        <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center">
+                                            <div>
+                                                <div className="font-bold text-slate-900 text-sm">{item.description}</div>
+                                                <div className="text-sm text-slate-500 mt-0.5">{item.quantity} hrs @ €{item.unit_price}/hr</div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</span>
+                                                {job.status !== 'completed' && (
+                                                    <button onClick={() => handleDeleteItem(item.id)} className="text-slate-300 hover:text-red-500 p-2">
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {(mobileTab as string) === 'reports' && (
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50 rounded-t-xl">
+                                <div>
+                                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <FileText className="w-5 h-5 text-delaval-blue" />
+                                        Service Reports
+                                    </h2>
+                                    <p className="text-sm text-slate-500 mt-1">Generate and view test reports</p>
+                                </div>
+                                <button
+                                    onClick={() => setIsGeneratingReport(true)}
+                                    className="bg-delaval-blue text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    New Report
+                                </button>
+                            </div>
+                            <div className="p-12 text-center text-slate-500">
+                                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <FileText className="w-8 h-8 text-slate-400" />
+                                </div>
+                                <p className="font-medium text-slate-700">No reports generated yet</p>
+                                <p className="text-sm mt-1">Click the button above to create a new IMQCS Test Report.</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </>

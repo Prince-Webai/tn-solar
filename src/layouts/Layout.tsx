@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, Euro, PieChart, FileCheck, Kanban, Settings as SettingsIcon } from 'lucide-react';
+import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, Euro, PieChart, FileCheck, Kanban, Settings as SettingsIcon, ClipboardList } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
@@ -59,6 +59,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         {
             title: 'Reports & Admin',
             items: [
+                { icon: ClipboardList, label: 'Service Reports', path: '/service-reports' },
                 ...(user?.user_metadata?.role !== 'Engineer' ? [
                     { icon: PieChart, label: 'Analytics', path: '/reports' },
                     { icon: Users, label: 'Team & Engineers', path: '/team' },
@@ -72,7 +73,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         { icon: LayoutDashboard, label: 'Home', path: '/' },
         { icon: FileText, label: 'Jobs', path: '/jobs' },
         { icon: Users, label: 'Customers', path: '/customers' },
-        { icon: Wrench, label: 'Parts', path: '/inventory' },
+        { icon: ClipboardList, label: 'Reports', path: '/service-reports' },
     ];
 
     const closeSidebar = () => setIsSidebarOpen(false);

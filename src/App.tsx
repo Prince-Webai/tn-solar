@@ -15,6 +15,7 @@ import Reports from './pages/Reports'
 import Team from './pages/Team'
 import Settings from './pages/Settings'
 import JobDetails from './pages/JobDetails'
+import ServiceReports from './pages/ServiceReports'
 
 import Login from './pages/Login'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -146,6 +147,13 @@ function App() {
                         <ProtectedRoute>
                             <Layout>
                                 <JobDetails />
+                            </Layout>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/service-reports" element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <ServiceReports />
                             </Layout>
                         </ProtectedRoute>
                     } />
