@@ -59,7 +59,7 @@ const ServiceReports: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             {/* Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
