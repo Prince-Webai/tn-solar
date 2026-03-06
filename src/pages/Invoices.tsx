@@ -831,7 +831,7 @@ const Invoices = () => {
                                         <SearchableSelect
                                             options={inventory.map(prod => ({
                                                 value: prod.name,
-                                                label: `${prod.name} (€${prod.sell_price})`
+                                                label: `${prod.name} (₹${prod.sell_price})`
                                             }))}
                                             value={item.description}
                                             onChange={(val) => {
@@ -900,7 +900,7 @@ const Invoices = () => {
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex justify-between items-center">
                         <div className="text-sm font-bold text-slate-600">Total Est.</div>
                         <div className="text-lg font-black text-delaval-blue">
-                            €{(editItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0) * (1 + vatRate / 100)).toFixed(2)}
+                            ₹{(editItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0) * (1 + vatRate / 100)).toFixed(2)}
                         </div>
                     </div>
 

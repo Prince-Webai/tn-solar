@@ -10,7 +10,8 @@ import {
     Facebook,
     Globe,
     CheckCircle,
-    Clock
+    Clock,
+    Users
 } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { Lead } from '../types';
@@ -212,7 +213,7 @@ const Leads = () => {
                         <div className="pt-4 border-t border-slate-50 flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-widest">
                             <div className="flex items-center gap-1">
                                 <Clock size={12} />
-                                {new Date(lead.created_at).toLocaleDateString()}
+                                {lead.created_at ? new Date(lead.created_at).toLocaleDateString() : 'N/A'}
                             </div>
                             {lead.is_converted && (
                                 <div className="flex items-center gap-1 text-green-600">

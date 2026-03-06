@@ -353,7 +353,7 @@ const Reports = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-96">
-                <div className="w-12 h-12 border-4 border-delaval-blue/30 border-t-delaval-blue rounded-full animate-spin"></div>
+                <div className="w-12 h-12 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
             </div>
         );
     }
@@ -433,7 +433,7 @@ const Reports = () => {
                             ₹{allInvoices.reduce((acc, curr) => acc + (curr.total_amount || 0), 0).toLocaleString()}
                         </h3>
                     </div>
-                    <div className="w-12 h-12 bg-delaval-light-blue text-delaval-blue rounded-lg flex items-center justify-center">
+                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
                         <TrendingUp size={24} />
                     </div>
                 </div>
@@ -445,8 +445,8 @@ const Reports = () => {
                 <div className="section-card border-none shadow-md overflow-hidden bg-white hover:border-transparent">
                     <div className="flex justify-between items-center p-6 bg-slate-50 border-b border-slate-100">
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-delaval-light-blue flex items-center justify-center shadow-sm">
-                                <Clock size={18} className="text-delaval-blue" />
+                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shadow-sm">
+                                <Clock size={18} className="text-blue-600" />
                             </div>
                             <h2 className="text-sm font-black font-display text-slate-800 uppercase tracking-widest">
                                 Payment Action Center
@@ -502,7 +502,7 @@ const Reports = () => {
                                                     {isOverdue ? `${days} Days Overdue` : 'Due Soon'}
                                                 </div>
                                             </div>
-                                            <div className={`flex items-center justify-center p-2 rounded-lg ${sendingReminder === inv.id ? 'bg-slate-100' : 'bg-delaval-blue text-white'}`}>
+                                            <div className={`flex items-center justify-center p-2 rounded-lg ${sendingReminder === inv.id ? 'bg-slate-100' : 'bg-blue-600 text-white'}`}>
                                                 {sendingReminder === inv.id ? <Activity size={16} className="animate-spin" /> : <Send size={16} />}
                                             </div>
                                         </div>
@@ -548,7 +548,7 @@ const Reports = () => {
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                         <div>
                             <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                                <BarChart2 size={24} className="text-delaval-blue" />
+                                <BarChart2 size={24} className="text-blue-600" />
                                 Revenue Trends
                             </h3>
                             <p className="text-sm text-slate-500 mt-1">Detailed performance analysis for the selected period</p>
@@ -565,7 +565,7 @@ const Reports = () => {
                                     key={opt.id}
                                     onClick={() => setGranularity(opt.id as any)}
                                     className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${granularity === opt.id
-                                        ? 'bg-white text-delaval-blue shadow-sm'
+                                        ? 'bg-white text-blue-600 shadow-sm'
                                         : 'text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
@@ -575,7 +575,7 @@ const Reports = () => {
                             <button
                                 onClick={() => setIsRangeModalOpen(true)}
                                 className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all flex items-center gap-1.5 ${filterType === 'custom'
-                                    ? 'bg-white text-delaval-blue shadow-sm'
+                                    ? 'bg-white text-blue-600 shadow-sm'
                                     : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
@@ -675,7 +675,7 @@ const Reports = () => {
                                             <div className="flex items-center justify-end gap-2">
                                                 <span className="text-xs text-slate-500">{percentage.toFixed(1)}%</span>
                                                 <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-delaval-blue" style={{ width: `${percentage}%` }}></div>
+                                                    <div className="h-full bg-blue-600" style={{ width: `${percentage}%` }}></div>
                                                 </div>
                                             </div>
                                         </td>
@@ -719,9 +719,9 @@ const Reports = () => {
                                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Paid So Far</div>
                                     <div className="font-bold text-emerald-600">₹{(inv.amount_paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                                 </div>
-                                <div className="p-4 rounded-xl bg-delaval-blue/5 border border-delaval-blue/10">
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-delaval-blue mb-1">Balance Due</div>
-                                    <div className="text-xl font-black text-delaval-blue">₹{remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                                <div className="p-4 rounded-xl bg-blue-600/5 border border-blue-600/10">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Balance Due</div>
+                                    <div className="text-xl font-black text-blue-600">₹{remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                                 </div>
                             </div>
 
@@ -763,7 +763,7 @@ const Reports = () => {
                                 <button
                                     onClick={() => handleSendReminder(inv)}
                                     disabled={sendingReminder === inv.id}
-                                    className="flex-[2] py-3 px-4 bg-delaval-blue hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-900/20 hover:shadow-blue-900/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                                    className="flex-[2] py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-900/20 hover:shadow-blue-900/40 hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                                 >
                                     {sendingReminder === inv.id ? (
                                         <Activity size={18} className="animate-spin" />
@@ -805,7 +805,7 @@ const Reports = () => {
                     </div>
 
                     <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-start gap-3">
-                        <TrendingUp size={18} className="text-delaval-blue mt-0.5" />
+                        <TrendingUp size={18} className="text-blue-600 mt-0.5" />
                         <div className="text-xs text-blue-700 leading-relaxed font-medium">
                             Selecting a custom range will automatically update all dashboard KPIs and the Trends chart below.
                         </div>
@@ -830,7 +830,7 @@ const Reports = () => {
                                 else if (diff <= 180) setGranularity('weekly');
                                 else setGranularity('monthly');
                             }}
-                            className="flex-[2] py-3 px-4 bg-delaval-blue hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-900/20 hover:shadow-blue-900/40 flex items-center justify-center gap-2 text-sm"
+                            className="flex-[2] py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-900/20 hover:shadow-blue-900/40 flex items-center justify-center gap-2 text-sm"
                         >
                             Apply Custom Range
                         </button>

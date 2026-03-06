@@ -87,7 +87,7 @@ const Settings = () => {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <Activity className="animate-spin text-delaval-blue" size={32} />
+                <Activity className="animate-spin text-blue-600" size={32} />
             </div>
         );
     }
@@ -102,7 +102,7 @@ const Settings = () => {
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-delaval-blue text-white rounded-xl font-bold hover:bg-delaval-blue/90 transition-all shadow-lg shadow-delaval-blue/20 disabled:opacity-50"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-600/90 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50"
                 >
                     {isSaving ? <Activity size={20} className="animate-spin" /> : <Save size={20} />}
                     {isSaving ? 'Saving...' : 'Save Settings'}
@@ -134,7 +134,7 @@ const Settings = () => {
                                 <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                 <input
                                     type="text"
-                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all bg-slate-50/50"
                                     value={userName}
                                     onChange={e => setUserName(e.target.value)}
                                 />
@@ -161,7 +161,7 @@ const Settings = () => {
                                         <Building size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <input
                                             type="text"
-                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all bg-slate-50/50"
                                             value={settings?.company_name || ''}
                                             onChange={e => setSettings(prev => prev ? { ...prev, company_name: e.target.value } : null)}
                                         />
@@ -176,7 +176,7 @@ const Settings = () => {
                                         <input
                                             type="text"
                                             placeholder="e.g. John Smith"
-                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all bg-slate-50/50"
                                             value={settings?.contact_name || ''}
                                             onChange={e => setSettings(prev => prev ? { ...prev, contact_name: e.target.value } : { id: '00000000-0000-0000-0000-000000000000', company_name: '', company_address: '', company_phone: '', company_email: '', contact_name: e.target.value, bank_name: '', account_name: '', iban: '', bic: '', vat_reg_number: '', webhook_url: '', updated_at: new Date().toISOString() })}
                                         />
@@ -188,7 +188,7 @@ const Settings = () => {
                                     <div className="relative">
                                         <MapPin size={18} className="absolute left-3 top-3 text-slate-400" />
                                         <textarea
-                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50 min-h-[100px]"
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all bg-slate-50/50 min-h-[100px]"
                                             value={settings?.company_address || ''}
                                             onChange={e => setSettings(prev => prev ? { ...prev, company_address: e.target.value } : null)}
                                         />
@@ -202,7 +202,7 @@ const Settings = () => {
                                             <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                             <input
                                                 type="text"
-                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all bg-slate-50/50"
                                                 value={settings?.company_phone || ''}
                                                 onChange={e => setSettings(prev => prev ? { ...prev, company_phone: e.target.value } : null)}
                                             />
@@ -214,7 +214,7 @@ const Settings = () => {
                                             <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                             <input
                                                 type="email"
-                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all bg-slate-50/50"
                                                 value={settings?.company_email || ''}
                                                 onChange={e => setSettings(prev => prev ? { ...prev, company_email: e.target.value } : null)}
                                             />
@@ -228,7 +228,7 @@ const Settings = () => {
                                         <Receipt size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                         <input
                                             type="text"
-                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all bg-slate-50/50"
                                             value={settings?.vat_reg_number || ''}
                                             onChange={e => setSettings(prev => prev ? { ...prev, vat_reg_number: e.target.value } : null)}
                                         />
@@ -253,7 +253,7 @@ const Settings = () => {
                                             <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Bank Name</label>
                                             <input
                                                 type="text"
-                                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all bg-slate-50/50"
                                                 value={settings?.bank_name || ''}
                                                 onChange={e => setSettings(prev => prev ? { ...prev, bank_name: e.target.value } : null)}
                                             />
@@ -262,7 +262,7 @@ const Settings = () => {
                                             <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Account Holder</label>
                                             <input
                                                 type="text"
-                                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all bg-slate-50/50"
                                                 value={settings?.account_name || ''}
                                                 onChange={e => setSettings(prev => prev ? { ...prev, account_name: e.target.value } : null)}
                                             />
@@ -273,7 +273,7 @@ const Settings = () => {
                                         <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">IBAN</label>
                                         <input
                                             type="text"
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all bg-slate-50/50"
                                             value={settings?.iban || ''}
                                             onChange={e => setSettings(prev => prev ? { ...prev, iban: e.target.value } : null)}
                                         />
@@ -283,7 +283,7 @@ const Settings = () => {
                                         <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">BIC/SWIFT</label>
                                         <input
                                             type="text"
-                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all bg-slate-50/50"
                                             value={settings?.bic || ''}
                                             onChange={e => setSettings(prev => prev ? { ...prev, bic: e.target.value } : null)}
                                         />
@@ -308,7 +308,7 @@ const Settings = () => {
                                         <input
                                             type="url"
                                             placeholder="https://your-webhook-endpoint.com"
-                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all bg-slate-50/50"
                                             value={settings?.webhook_url || ''}
                                             onChange={e => setSettings(prev => prev ? { ...prev, webhook_url: e.target.value } : null)}
                                         />

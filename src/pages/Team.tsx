@@ -161,7 +161,7 @@ const Team = () => {
                         setNewEngineer({ name: '', email: '', phone: '', role: 'Engineer', status: 'active' });
                         setIsModalOpen(true);
                     }}
-                    className="flex items-center gap-2 bg-delaval-blue hover:bg-delaval-dark-blue text-white px-4 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20"
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20"
                 >
                     <Plus size={20} /> Add Member
                 </button>
@@ -173,7 +173,7 @@ const Team = () => {
                     <input
                         type="text"
                         placeholder="Search team members..."
-                        className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -186,12 +186,12 @@ const Team = () => {
                         <div className="col-span-full py-12 text-center text-slate-400 italic">No team members found. Add one to get started.</div>
                     ) : (
                         filteredEngineers.map(eng => (
-                            <div key={eng.id} className="stat-card group relative hover:border-delaval-blue transition-colors">
+                            <div key={eng.id} className="stat-card group relative hover:border-blue-600 transition-colors">
                                 <div className="flex items-start justify-between mb-4">
-                                    <div className="w-12 h-12 bg-blue-50 text-delaval-blue rounded-full flex items-center justify-center font-bold text-xl">
+                                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold text-xl">
                                         {eng.name.substring(0, 2).toUpperCase()}
                                     </div>
-                                    <div className={`px-2 py-1 rounded-full text-xs font-semibold ${eng.role === 'Admin' ? 'bg-delaval-blue text-white' : 'bg-blue-100 text-blue-800'}`}>
+                                    <div className={`px-2 py-1 rounded-full text-xs font-semibold ${eng.role === 'Admin' ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-800'}`}>
                                         {eng.role}
                                     </div>
                                 </div>
@@ -208,7 +208,7 @@ const Team = () => {
                                 <div className="flex gap-2 mt-4 pt-3 border-t border-slate-100">
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleEditClick(eng); }}
-                                        className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-slate-500 hover:text-delaval-blue hover:bg-blue-50 rounded-lg transition-all"
+                                        className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                                     >
                                         <Pencil size={14} /> Edit
                                     </button>
@@ -229,7 +229,7 @@ const Team = () => {
                 <form onSubmit={handleSaveEngineer} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-                        <input required type="text" className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                        <input required type="text" className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 outline-none"
                             value={newEngineer.name} onChange={e => setNewEngineer({ ...newEngineer, name: e.target.value })} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -264,17 +264,17 @@ const Team = () => {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                        <input type="email" className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                        <input type="email" className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 outline-none"
                             value={newEngineer.email} onChange={e => setNewEngineer({ ...newEngineer, email: e.target.value })} />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-                        <input type="tel" className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                        <input type="tel" className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 outline-none"
                             value={newEngineer.phone} onChange={e => setNewEngineer({ ...newEngineer, phone: e.target.value })} />
                     </div>
                     <div className="pt-4 flex justify-end gap-3">
                         <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium">Cancel</button>
-                        <button type="submit" className="px-6 py-2 bg-delaval-blue text-white rounded-lg font-bold hover:bg-delaval-dark-blue">Save Member</button>
+                        <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700">Save Member</button>
                     </div>
                 </form>
             </Modal>

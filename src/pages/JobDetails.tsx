@@ -189,7 +189,7 @@ const JobDetails = () => {
                                                     <tr key={item.id} className="border-t border-slate-100">
                                                         <td className="px-4 py-3">{item.description}</td>
                                                         <td className="px-4 py-3">{item.quantity}</td>
-                                                        <td className="px-4 py-3">€{item.unit_price}</td>
+                                                        <td className="px-4 py-3">₹{item.unit_price}</td>
                                                         {job.status !== 'completed' && (
                                                             <td className="px-4 py-3">
                                                                 <button onClick={() => handleDeleteItem(item.id)} className="text-red-500 hover:bg-red-50 p-1 rounded">
@@ -209,7 +209,7 @@ const JobDetails = () => {
                                                 <div className="flex-1">
                                                     <SearchableSelect
                                                         label="Add Code / Product"
-                                                        options={inventory.map(inv => ({ value: inv.id, label: `${inv.name} (€${inv.sell_price})` }))}
+                                                        options={inventory.map(inv => ({ value: inv.id, label: `${inv.name} (₹${inv.sell_price})` }))}
                                                         value=""
                                                         onChange={(val) => {
                                                             const item = inventory.find(i => i.id === val);
@@ -262,7 +262,7 @@ const JobDetails = () => {
                                                     />
                                                 </div>
                                                 <div className="w-24">
-                                                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Cost (€)</label>
+                                                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Cost (₹)</label>
                                                     <input
                                                         type="number"
                                                         className="w-full p-2 border rounded"
@@ -520,7 +520,7 @@ const JobDetails = () => {
                                     <h3 className="text-sm font-bold text-slate-900">Add Part</h3>
                                     <SearchableSelect
                                         label=""
-                                        options={inventory.map(inv => ({ value: inv.id, label: `${inv.name} (€${inv.sell_price})` }))}
+                                        options={inventory.map(inv => ({ value: inv.id, label: `${inv.name} (₹${inv.sell_price})` }))}
                                         value=""
                                         onChange={(val) => {
                                             const item = inventory.find(i => i.id === val);
@@ -546,7 +546,7 @@ const JobDetails = () => {
                                             />
                                         </div>
                                         <div className="w-1/3">
-                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Price (€)</label>
+                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Price (₹)</label>
                                             <input
                                                 type="number"
                                                 className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
@@ -572,7 +572,7 @@ const JobDetails = () => {
                             {/* Parts List */}
                             <div className="flex justify-between items-center px-1 mb-2">
                                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Used Parts ({partsItems.length})</span>
-                                <span className="text-sm font-bold text-slate-900">Total: €{totalPartsCost.toFixed(2)}</span>
+                                <span className="text-sm font-bold text-slate-900">Total: ₹{totalPartsCost.toFixed(2)}</span>
                             </div>
                             <div className="space-y-3">
                                 {partsItems.length === 0 ? (
@@ -582,10 +582,10 @@ const JobDetails = () => {
                                         <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center group">
                                             <div>
                                                 <div className="font-bold text-slate-900 text-sm">{item.description}</div>
-                                                <div className="text-sm text-slate-500 mt-0.5">Qty {item.quantity} × €{item.unit_price}</div>
+                                                <div className="text-sm text-slate-500 mt-0.5">Qty {item.quantity} × ₹{item.unit_price}</div>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <span className="font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</span>
+                                                <span className="font-bold text-slate-900">₹{(item.quantity * item.unit_price).toFixed(2)}</span>
                                                 {job.status !== 'completed' && (
                                                     <button onClick={() => handleDeleteItem(item.id)} className="text-slate-300 hover:text-red-500 p-2">
                                                         <Trash2 size={18} />
@@ -625,7 +625,7 @@ const JobDetails = () => {
                                             />
                                         </div>
                                         <div className="w-1/3">
-                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Rate (€)</label>
+                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Rate (₹)</label>
                                             <input
                                                 type="number"
                                                 className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
@@ -651,7 +651,7 @@ const JobDetails = () => {
                             {/* Labor List */}
                             <div className="flex justify-between items-center px-1 mb-2">
                                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Labour Log ({laborItems.length})</span>
-                                <span className="text-sm font-bold text-slate-900">Total: €{totalLaborCost.toFixed(2)}</span>
+                                <span className="text-sm font-bold text-slate-900">Total: ₹{totalLaborCost.toFixed(2)}</span>
                             </div>
                             <div className="space-y-3">
                                 {laborItems.length === 0 ? (
@@ -661,10 +661,10 @@ const JobDetails = () => {
                                         <div key={item.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center">
                                             <div>
                                                 <div className="font-bold text-slate-900 text-sm">{item.description}</div>
-                                                <div className="text-sm text-slate-500 mt-0.5">{item.quantity} hrs @ €{item.unit_price}/hr</div>
+                                                <div className="text-sm text-slate-500 mt-0.5">{item.quantity} hrs @ ₹{item.unit_price}/hr</div>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <span className="font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</span>
+                                                <span className="font-bold text-slate-900">₹{(item.quantity * item.unit_price).toFixed(2)}</span>
                                                 {job.status !== 'completed' && (
                                                     <button onClick={() => handleDeleteItem(item.id)} className="text-slate-300 hover:text-red-500 p-2">
                                                         <Trash2 size={18} />

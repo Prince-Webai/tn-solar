@@ -601,7 +601,7 @@ const Jobs = () => {
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="font-bold text-slate-900">Parts & Labor</h3>
                                 <div className="text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                                    Total: €{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
+                                    Total: ₹{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
                                 </div>
                             </div>
 
@@ -610,10 +610,10 @@ const Jobs = () => {
                                     <div key={idx} className="flex justify-between items-center p-3 border border-slate-200 rounded-lg">
                                         <div>
                                             <div className="font-medium text-slate-900">{item.description}</div>
-                                            <div className="text-sm text-slate-500">Qty: {item.quantity} × €{item.unit_price.toFixed(2)}</div>
+                                            <div className="text-sm text-slate-500">Qty: {item.quantity} × ₹{item.unit_price.toFixed(2)}</div>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <div className="font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</div>
+                                            <div className="font-bold text-slate-900">₹{(item.quantity * item.unit_price).toFixed(2)}</div>
                                             <button
                                                 type="button"
                                                 onClick={() => setModalItems(modalItems.filter((_, i) => i !== idx))}
@@ -654,7 +654,7 @@ const Jobs = () => {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-slate-500 mb-1">Unit Price (€)</label>
+                                            <label className="block text-xs text-slate-500 mb-1">Unit Price (₹)</label>
                                             <input
                                                 type="number"
                                                 min="0"
@@ -692,7 +692,7 @@ const Jobs = () => {
                                 <div className="grid grid-cols-[1fr_auto] gap-3">
                                     <SearchableSelect
                                         label=""
-                                        options={inventory.map(i => ({ value: i.id, label: `${i.name} (€${i.sell_price})` }))}
+                                        options={inventory.map(i => ({ value: i.id, label: `${i.name} (₹${i.sell_price})` }))}
                                         value=""
                                         onChange={(id) => {
                                             const invItem = inventory.find(i => i.id === id);
@@ -891,7 +891,7 @@ const Jobs = () => {
                                 <div className="flex justify-between items-center pl-1">
                                     <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Parts & Labor</label>
                                     <div className="text-[11px] font-bold text-[#0051A5] bg-[#E6F0FF] px-2 py-0.5 rounded-full">
-                                        Total: €{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
+                                        Total: ₹{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
                                     </div>
                                 </div>
 
@@ -900,9 +900,9 @@ const Jobs = () => {
                                         <div key={idx} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex items-center gap-3">
                                             <div className="flex-1 min-w-0">
                                                 <div className="font-bold text-slate-900 text-sm truncate">{item.description}</div>
-                                                <div className="text-xs text-slate-500 font-medium">Qty: {item.quantity} × €{item.unit_price.toFixed(2)}</div>
+                                                <div className="text-xs text-slate-500 font-medium">Qty: {item.quantity} × ₹{item.unit_price.toFixed(2)}</div>
                                             </div>
-                                            <div className="text-sm font-black text-slate-900 pr-2">€{(item.quantity * item.unit_price).toFixed(2)}</div>
+                                            <div className="text-sm font-black text-slate-900 pr-2">₹{(item.quantity * item.unit_price).toFixed(2)}</div>
                                             <button
                                                 type="button"
                                                 onClick={() => setModalItems(modalItems.filter((_, i) => i !== idx))}
@@ -935,7 +935,7 @@ const Jobs = () => {
                                                     />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Price (€)</div>
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Price (₹)</div>
                                                     <input
                                                         type="number"
                                                         className="w-full text-slate-900 text-[15px] font-medium outline-none border-b border-slate-100 pb-2"
@@ -981,7 +981,7 @@ const Jobs = () => {
                                                 }}
                                             >
                                                 <option value="">Select an inventory item...</option>
-                                                {inventory.map(i => <option key={i.id} value={i.id}>{i.name} (€{i.sell_price})</option>)}
+                                                {inventory.map(i => <option key={i.id} value={i.id}>{i.name} (₹{i.sell_price})</option>)}
                                             </select>
 
                                             <button
