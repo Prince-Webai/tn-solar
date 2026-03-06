@@ -68,7 +68,7 @@ const ServiceReports: React.FC = () => {
             >
                 <div>
                     <h1 className="text-2xl md:text-3xl font-black font-display text-slate-900 flex items-center gap-3">
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-delaval-blue text-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/20">
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-600 text-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/20">
                             <ClipboardList size={22} className="md:w-6 md:h-6" />
                         </div>
                         Service Reports
@@ -81,7 +81,7 @@ const ServiceReports: React.FC = () => {
                     </span>
                     <button
                         onClick={() => setIsStartModalOpen(true)}
-                        className="flex items-center gap-2 bg-delaval-blue hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 transition-all hover:scale-105 active:scale-95"
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 transition-all hover:scale-105 active:scale-95"
                     >
                         <Plus size={18} /> New Report
                     </button>
@@ -91,7 +91,7 @@ const ServiceReports: React.FC = () => {
             {/* Reports List */}
             {loading ? (
                 <div className="flex items-center justify-center py-24">
-                    <Loader2 className="w-8 h-8 text-delaval-blue animate-spin" />
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
                 </div>
             ) : reports.length === 0 ? (
                 <div className="section-card p-16 text-center">
@@ -134,7 +134,7 @@ const ServiceReports: React.FC = () => {
                                         >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                                                    <CalendarDays size={14} className="text-delaval-blue" />
+                                                    <CalendarDays size={14} className="text-blue-600" />
                                                     {report.test_date
                                                         ? new Date(report.test_date).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })
                                                         : new Date(report.created_at).toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -165,7 +165,7 @@ const ServiceReports: React.FC = () => {
                                             <td className="px-6 py-4 text-right">
                                                 <button
                                                     onClick={() => setViewingReport(report)}
-                                                    className="inline-flex items-center gap-2 bg-white border border-slate-200 text-delaval-blue hover:bg-delaval-blue hover:text-white hover:border-delaval-blue px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm group-hover:shadow-md active:scale-95"
+                                                    className="inline-flex items-center gap-2 bg-white border border-slate-200 text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm group-hover:shadow-md active:scale-95"
                                                 >
                                                     <Eye size={16} />
                                                     View Report
@@ -203,13 +203,13 @@ const ServiceReports: React.FC = () => {
                                             }
                                         </p>
                                     </div>
-                                    <p className="text-[10px] text-delaval-blue font-bold mt-1 uppercase tracking-tight flex items-center gap-1">
+                                    <p className="text-[10px] text-blue-600 font-bold mt-1 uppercase tracking-tight flex items-center gap-1">
                                         <Wrench size={10} /> {report.machine_make || 'Standard Machine'}
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => setViewingReport(report)}
-                                    className="shrink-0 bg-blue-50 text-delaval-blue p-3 rounded-xl shadow-sm active:scale-90 transition-transform"
+                                    className="shrink-0 bg-blue-50 text-blue-600 p-3 rounded-xl shadow-sm active:scale-90 transition-transform"
                                 >
                                     <Eye size={18} />
                                 </button>

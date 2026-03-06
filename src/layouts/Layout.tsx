@@ -23,12 +23,16 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     }, [user]);
 
     const handleSignOut = async () => {
-
         try {
+            // Clear dev bypass so ProtectedRoute enforces login
+            localStorage.removeItem('dev_bypass');
             await signOut();
-            // Navigation to login is handled by ProtectedRoute/AuthContext state change
+            // Force navigation to login regardless of auth state
+            navigate('/login');
         } catch (error) {
             console.error('Error signing out:', error);
+            localStorage.removeItem('dev_bypass');
+            navigate('/login');
         }
     };
 
@@ -63,6 +67,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 ...(user?.user_metadata?.role !== 'Engineer' ? [
                     { icon: PieChart, label: 'Analytics', path: '/reports' },
                     { icon: Users, label: 'Team & Engineers', path: '/team' },
+                    { icon: SettingsIcon, label: 'Settings', path: '/settings' },
                 ] : []),
             ]
         },
@@ -97,14 +102,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => navigate('/settings')}
-                            className="hidden md:flex p-2 text-slate-400 hover:text-delaval-blue hover:bg-blue-50 rounded-full transition-colors"
+                            className="hidden md:flex p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
                             title="Settings"
                         >
                             <SettingsIcon size={20} />
                         </button>
 
                         <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-full border border-slate-200">
-                            <div className="w-9 h-9 rounded-full bg-delaval-blue text-white flex items-center justify-center font-bold">
+                            <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
                                 <User size={20} />
                             </div>
                             <div className="text-slate-700 text-sm font-medium pr-2">

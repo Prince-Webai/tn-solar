@@ -31,7 +31,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         return (
             <div className="h-screen w-full flex items-center justify-center bg-[#F8FAFB]">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 border-4 border-delaval-blue/30 border-t-delaval-blue rounded-full animate-spin"></div>
+                    <div className="w-12 h-12 border-4 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
                     <div className="text-slate-500 font-medium animate-pulse">Loading TN Solar...</div>
                 </div>
             </div>
