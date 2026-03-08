@@ -18,6 +18,9 @@ import JobDetails from './pages/JobDetails'
 import Projects from './pages/Projects'
 import ProjectDetails from './pages/ProjectDetails'
 import Leads from './pages/Leads'
+import LeadPipeline from './pages/LeadPipeline'
+import LeadDetails from './pages/LeadDetails'
+import CustomFieldSettings from './pages/CustomFieldSettings'
 import Login from './pages/Login'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import RoleGuard from './components/RoleGuard'
@@ -78,6 +81,33 @@ function App() {
                             <RoleGuard allowedRoles={['Admin', 'Manager', 'Coordinator', 'Sales Executive']}>
                                 <Layout>
                                     <Leads />
+                                </Layout>
+                            </RoleGuard>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/leads/pipeline" element={
+                        <ProtectedRoute>
+                            <RoleGuard allowedRoles={['Admin', 'Manager', 'Coordinator', 'Sales Executive']}>
+                                <Layout>
+                                    <LeadPipeline />
+                                </Layout>
+                            </RoleGuard>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/settings/custom-fields" element={
+                        <ProtectedRoute>
+                            <RoleGuard allowedRoles={['Admin', 'Manager']}>
+                                <Layout>
+                                    <CustomFieldSettings />
+                                </Layout>
+                            </RoleGuard>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/leads/:id" element={
+                        <ProtectedRoute>
+                            <RoleGuard allowedRoles={['Admin', 'Manager', 'Coordinator', 'Sales Executive']}>
+                                <Layout>
+                                    <LeadDetails />
                                 </Layout>
                             </RoleGuard>
                         </ProtectedRoute>

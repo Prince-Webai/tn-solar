@@ -465,6 +465,20 @@ export const dataService = {
         return data;
     },
 
+    async getProjects(): Promise<{ data: Project[] | null, error: any }> {
+        if (!isSupabaseConfigured()) return { data: [], error: 'Supabase not configured' };
+        try {
+            const { data, error } = await supabase
+                .from('projects')
+                .select('*, customers(*)')
+                .order('created_at', { ascending: false });
+            return { data, error };
+        } catch (error) {
+            console.error('Error fetching projects:', error);
+            return { data: null, error };
+        }
+    },
+
     async createProjectFromQuote(quoteId: string) {
         const { data: quote, error: quoteError } = await supabase
             .from('quotes')
@@ -571,28 +585,91 @@ export const dataService = {
         }
     },
 
-    async updateProjectStatus(projectId: string, status: string): Promise<{ data: Project | null, error: any }> {
+    async updateProjectStatus(projectId: string, status?: string, stage?: string): Promise<{ data: Project | null, error: any }> {
         if (!isSupabaseConfigured()) return { data: null, error: 'Supabase not configured' };
 
         try {
-            const { data: oldProject } = await supabase.from('projects').select('status').eq('id', projectId).single();
+            const { data: oldProject } = await supabase.from('projects').select('status, current_stage').eq('id', projectId).single();
+
+            const updates: any = {};
+            if (status) updates.status = status;
+            if (stage) updates.current_stage = stage;
 
             const { data: project, error } = await supabase
                 .from('projects')
-                .update({ status })
+                .update(updates)
                 .eq('id', projectId)
                 .select()
                 .single();
 
             if (error) throw error;
 
-            await auditLogger.logStatusChange('Project', projectId, oldProject?.status || 'Unknown', status, '');
+            if (status && oldProject?.status !== status) {
+                await auditLogger.logStatusChange('Project', projectId, oldProject?.status || 'Unknown', status, '');
+            }
+            if (stage && oldProject?.current_stage !== stage) {
+                await auditLogger.logStatusChange('Project', projectId, oldProject?.current_stage || 'Unknown', stage, '');
+            }
 
             return { data: project, error: null };
         } catch (error: any) {
             console.error('Error updating project status:', error);
             return { data: null, error: error.message || error };
         }
+    },
+
+    async getCustomFieldDefinitions(entityType: 'lead' | 'customer') {
+        if (!isSupabaseConfigured()) return [];
+        const { data, error } = await supabase
+            .from('custom_field_definitions')
+            .select('*')
+            .eq('entity_type', entityType);
+        if (error) {
+            console.error('Error fetching field definitions:', error);
+            return [];
+        }
+        return data || [];
+    },
+
+    async saveCustomFieldDefinitions(definitions: any[]) {
+        if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+
+        // Simple implementation: upsert based on ID if exists, or insert
+        const { data, error } = await supabase
+            .from('custom_field_definitions')
+            .upsert(definitions.map(d => ({
+                id: d.id.length > 20 ? d.id : undefined, // Check if it's a real UUID or a temp timestamp ID
+                name: d.name,
+                label: d.label,
+                type: d.type,
+                required: d.required,
+                entity_type: d.entity_type
+            })));
+
+        return { data, error };
+    },
+
+    async deleteCustomFieldDefinition(id: string) {
+        const { error } = await supabase
+            .from('custom_field_definitions')
+            .delete()
+            .eq('id', id);
+        return { error };
+    },
+
+    async getAuditLogs(entityType: string, entityId: string) {
+        if (!isSupabaseConfigured()) return [];
+        const { data, error } = await supabase
+            .from('audit_logs')
+            .select('*')
+            .eq('entity_type', entityType)
+            .eq('entity_id', entityId)
+            .order('created_at', { ascending: false });
+        if (error) {
+            console.error('Error fetching audit logs:', error);
+            return [];
+        }
+        return data || [];
     }
 };
 

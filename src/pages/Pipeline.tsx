@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   DragDropContext,
   Droppable,
@@ -7,66 +8,73 @@ import {
   DropResult,
 } from "@hello-pangea/dnd";
 import { dataService } from "../services/dataService";
-import { Job } from "../types";
 import { useAuth } from "../context/AuthContext";
 import {
   Clock,
   CheckCircle2,
-  XCircle,
-  AlertCircle,
-  Calendar,
   Filter,
-  PackageSearch
+  PackageSearch,
+  FileText,
+  Wrench,
+  CircleDollarSign as RupeeIcon
 } from "lucide-react";
 import SearchableSelect from "../components/SearchableSelect";
 
 const COLUMNS = [
   {
-    id: "scheduled",
-    title: "Scheduled",
-    icon: Calendar,
+    id: "Documentation",
+    title: "Documentation",
+    icon: FileText,
     color: "text-slate-500",
     bg: "bg-slate-100",
     border: "border-slate-200",
   },
   {
-    id: "in_progress",
-    title: "In Progress",
+    id: "MNRE Application",
+    title: "MNRE/Subsidy",
     icon: Clock,
-    color: "text-delaval-blue",
+    color: "text-blue-500",
     bg: "bg-blue-50",
     border: "border-blue-200",
   },
   {
-    id: "awaiting_parts",
-    title: "Awaiting Parts",
+    id: "Loan Process",
+    title: "Loan Process",
+    icon: RupeeIcon, // Need to ensure RupeeIcon is available or use CreditCard
+    color: "text-indigo-500",
+    bg: "bg-indigo-50",
+    border: "border-indigo-200",
+  },
+  {
+    id: "Procurement",
+    title: "Procurement",
     icon: PackageSearch,
     color: "text-amber-500",
     bg: "bg-amber-50",
     border: "border-amber-200",
   },
   {
-    id: "completed",
-    title: "Completed",
+    id: "Installation",
+    title: "Installation",
+    icon: Wrench,
+    color: "text-orange-500",
+    bg: "bg-orange-50",
+    border: "border-orange-200",
+  },
+  {
+    id: "Net Metering",
+    title: "Net Metering",
     icon: CheckCircle2,
     color: "text-emerald-500",
     bg: "bg-emerald-50",
     border: "border-emerald-200",
-  },
-  {
-    id: "cancelled",
-    title: "Cancelled",
-    icon: XCircle,
-    color: "text-red-500",
-    bg: "bg-red-50",
-    border: "border-red-200",
   },
 ];
 
 const Pipeline = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [engineers, setEngineers] = useState<any[]>([]);
   const [selectedEngineer, setSelectedEngineer] = useState<string>('all');
@@ -86,7 +94,7 @@ const Pipeline = () => {
     checkScrollable();
     window.addEventListener('resize', checkScrollable);
     return () => window.removeEventListener('resize', checkScrollable);
-  }, [jobs]);
+  }, [projects]);
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
@@ -120,29 +128,23 @@ const Pipeline = () => {
     loadEngineers();
   }, [isAdmin]);
 
-  const loadJobs = async () => {
+  const loadProjects = async () => {
     try {
       setLoading(true);
 
-      let engineerToFetch = undefined;
-      if (!isAdmin) {
-        engineerToFetch = user?.user_metadata?.name || user?.email?.split("@")[0];
-      } else if (selectedEngineer !== 'all') {
-        engineerToFetch = selectedEngineer;
-      }
-
-      const data = await dataService.getJobs(undefined, engineerToFetch);
-      setJobs(data);
+      const { data, error } = await dataService.getProjects();
+      if (error) throw error;
+      setProjects(data || []);
     } catch (error) {
-      console.error("Error loading jobs:", error);
+      console.error("Error loading projects:", error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadJobs();
-  }, [user, selectedEngineer]);
+    loadProjects();
+  }, [user]);
 
   const onDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -156,36 +158,33 @@ const Pipeline = () => {
       return;
     }
 
-    const newStatus = destination.droppableId as Job["status"];
+    const newStage = destination.droppableId;
 
     // Optimistically update UI
-    setJobs((prevJobs) =>
-      prevJobs.map((job) =>
-        job.id === draggableId ? { ...job, status: newStatus } : job,
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === draggableId ? { ...p, current_stage: newStage } : p,
       ),
     );
 
     // Update in backend
-    const { error } = await dataService.updateJob(draggableId, {
-      status: newStatus,
-    });
+    // Special handling for Installation gate is done in advanceProjectStage 
+    // but for drag and drop we might need a simpler update or a specialized method.
+    const { error } = await dataService.updateProjectStatus(draggableId, undefined, newStage);
     if (error) {
-      console.error("Failed to update job status:", error);
-      // Revert on failure
-      loadJobs();
+      console.error("Failed to update project stage:", error);
+      toast.error(error);
+      loadProjects();
     }
   };
 
-  const getJobsByStatus = (status: string) => {
-    return (
-      jobs
-        .filter((job) => job.status === status)
-        // Sort by date inside the column conceptually, or just preserve array order
-        .sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        )
-    );
+  const getProjectsByStage = (stage: string) => {
+    return projects
+      .filter((p) => p.current_stage === stage)
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
   };
 
   if (loading) {
@@ -246,7 +245,7 @@ const Pipeline = () => {
           onScroll={handleScroll}
         >
           {COLUMNS.map((column) => {
-            const columnJobs = getJobsByStatus(column.id);
+            const columnProjects = getProjectsByStage(column.id);
             const Icon = column.icon;
 
             return (
@@ -259,7 +258,7 @@ const Pipeline = () => {
                     {column.title}
                   </h2>
                   <div className="ml-auto bg-white px-2 py-0.5 rounded-full text-xs font-medium text-slate-500 shadow-sm">
-                    {columnJobs.length}
+                    {columnProjects.length}
                   </div>
                 </div>
 
@@ -269,15 +268,15 @@ const Pipeline = () => {
                       ref={provided.innerRef}
                       {...provided.droppableProps}
                       className={`flex-1 rounded-2xl p-3 border-2 border-dashed transition-colors duration-200 flex flex-col ${snapshot.isDraggingOver
-                        ? "border-delaval-blue bg-blue-50/50"
+                        ? "border-blue-600 bg-blue-50/50"
                         : "border-transparent bg-slate-50"
                         }`}
                     >
                       <div className="flex flex-col gap-3 min-h-[150px] h-full flex-grow">
-                        {columnJobs.map((job, index) => (
+                        {columnProjects.map((project, index) => (
                           <Draggable
-                            key={job.id}
-                            draggableId={job.id}
+                            key={project.id}
+                            draggableId={project.id}
                             index={index}
                           >
                             {(provided, snapshot) => (
@@ -285,48 +284,35 @@ const Pipeline = () => {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                onClick={() => navigate(`/jobs/${job.id}`)}
+                                onClick={() => navigate(`/projects/${project.id}`)}
                                 className={`bg-white p-4 rounded-xl border shadow-sm transition-all duration-200 cursor-pointer ${snapshot.isDragging
-                                  ? "shadow-xl ring-2 ring-delaval-blue/20 border-delaval-blue scale-105 opacity-90"
+                                  ? "shadow-xl ring-2 ring-blue-600/20 border-blue-600 scale-105 opacity-90"
                                   : "border-slate-200 hover:border-slate-300 hover:shadow-md"
                                   }`}
                               >
                                 <div className="flex justify-between items-start mb-2">
                                   <span className="text-xs font-bold text-slate-400">
                                     #
-                                    {job.job_number.toString().padStart(4, "0")}
+                                    {project.project_number?.toString().padStart(4, "0")}
                                   </span>
-                                  {job.date_scheduled && (
-                                    <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
-                                      {new Date(
-                                        job.date_scheduled,
-                                      ).toLocaleDateString("en-GB")}
-                                    </span>
-                                  )}
+                                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
+                                    {project.status}
+                                  </span>
                                 </div>
                                 <h3 className="font-semibold text-slate-800 mb-1.5 leading-snug">
-                                  {job.customers?.name || "Unknown Customer"}
+                                  {project.customers?.name || "Unknown Customer"}
                                 </h3>
-                                {job.service_type && (
-                                  <p className="text-sm text-slate-500 flex items-start gap-1.5 line-clamp-2 mt-2">
-                                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
-                                    <span className="leading-tight">
-                                      {job.service_type}
-                                    </span>
-                                  </p>
-                                )}
-                                {job.engineer_name && (
-                                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
-                                    <div className="w-5 h-5 rounded bg-delaval-blue/10 flex items-center justify-center text-delaval-blue font-bold text-[10px]">
-                                      {job.engineer_name
-                                        .charAt(0)
-                                        .toUpperCase()}
-                                    </div>
-                                    <span className="text-xs font-medium text-slate-600">
-                                      {job.engineer_name}
-                                    </span>
+                                <p className="text-sm text-slate-600 font-medium">
+                                  {project.title}
+                                </p>
+                                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                                  <span className="text-xs text-slate-500">
+                                    {project.system_size_kw} kW
+                                  </span>
+                                  <div className="text-xs font-bold text-blue-600">
+                                    ₹{project.total_price?.toLocaleString()}
                                   </div>
-                                )}
+                                </div>
                               </div>
                             )}
                           </Draggable>

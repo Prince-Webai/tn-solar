@@ -12,7 +12,8 @@ create table customers (
   email text,
   phone text,
   account_balance decimal(10, 2) default 0.00,
-  payment_terms text default 'Net 30'
+  payment_terms text default 'Net 30',
+  custom_fields jsonb default '{}'
 );
 
 -- Inventory Table
@@ -127,7 +128,8 @@ create table leads (
   source text,
   status text check (status in ('new', 'contacted', 'qualified', 'unqualified', 'converted')) default 'new',
   notes text,
-  assigned_to uuid references engineers(id) -- Assuming engineers can be assigned leads
+  assigned_to uuid references engineers(id),
+  custom_fields jsonb default '{}'
 );
 
 -- Enable RLS
@@ -278,3 +280,18 @@ ALTER TABLE invoices ADD COLUMN sent_count INTEGER DEFAULT 0;
 
 -- Update status constraint if necessary (to ensure draft is allowed)
 -- Assuming status is already a text field or has a check constraint including 'draft'
+-- Custom Field Definitions
+create table custom_field_definitions (
+  id uuid default uuid_generate_v4() primary key,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  name text not null,
+  label text not null,
+  type text check (type in ('text', 'number', 'date', 'boolean')) default 'text',
+  required boolean default false,
+  entity_type text check (entity_type in ('lead', 'customer')) not null,
+  options jsonb default '[]' -- For select fields if needed later
+);
+
+-- Enable RLS
+alter table custom_field_definitions enable row level security;
+create policy "Allow all access" on custom_field_definitions for all using (true) with check (true);

@@ -11,6 +11,7 @@ export interface Customer {
     payment_terms: string;
     notes?: string;
     status: 'active' | 'inactive' | 'lead';
+    custom_fields?: any;
 }
 
 export interface InventoryItem {
@@ -177,6 +178,7 @@ export interface Lead {
     is_converted?: boolean;
     converted_at?: string;
     assigned_to?: string;
+    custom_fields?: any;
 }
 
 export interface Project {

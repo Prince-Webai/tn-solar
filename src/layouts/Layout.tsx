@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, CircleDollarSign as RupeeIcon, PieChart, Kanban, Settings as SettingsIcon, FileCheck, UserPlus, GitMerge, CreditCard, X, MapPin, AlertCircle, Bell, Briefcase } from 'lucide-react';
+import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, CircleDollarSign as RupeeIcon, PieChart, Kanban, Settings as SettingsIcon, FileCheck, UserPlus, GitMerge, MapPin, Briefcase } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
@@ -44,6 +44,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 { icon: Briefcase, label: 'Solar Projects', path: '/projects', roles: ['Admin', 'Manager', 'Coordinator', 'Sales Executive', 'Installer', 'Surveyor'] },
                 { icon: Wrench, label: 'Service Jobs', path: '/jobs', roles: ['Admin', 'Manager', 'Coordinator', 'Sales Executive', 'Installer', 'Surveyor'] },
                 { icon: Kanban, label: 'Pipeline', path: '/pipeline', roles: ['Admin', 'Manager', 'Coordinator'] },
+                { icon: GitMerge, label: 'Lead Pipeline', path: '/leads/pipeline', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
                 { icon: Users, label: 'Leads', path: '/leads', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
                 { icon: Users, label: 'Customers', path: '/customers', roles: ['Admin', 'Sales Executive', 'Manager', 'Accounts'] },
             ]
@@ -67,6 +68,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             items: [
                 { icon: PieChart, label: 'Analytics', path: '/reports', roles: ['Admin', 'Manager'] },
                 { icon: Users, label: 'Team', path: '/team', roles: ['Admin'] },
+                { icon: GitMerge, label: 'Custom Fields', path: '/settings/custom-fields', roles: ['Admin', 'Manager'] },
                 { icon: SettingsIcon, label: 'Settings', path: '/settings', roles: ['Admin'] },
             ]
         },
@@ -83,7 +85,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         { icon: Briefcase, label: 'Solar', path: '/projects', roles: ['Admin', 'Manager', 'Coordinator', 'Sales Executive', 'Installer', 'Surveyor'] },
         { icon: UserPlus, label: 'Leads', path: '/leads', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
         { icon: MapPin, label: 'Surveys', path: '/surveys', roles: ['Admin', 'Surveyor'] },
-        { icon: GitMerge, label: 'Pipeline', path: '/pipeline', roles: ['Admin', 'Manager', 'Coordinator'] },
+        { icon: GitMerge, label: 'Lead Pipe', path: '/leads/pipeline', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
+        { icon: Kanban, label: 'Pipeline', path: '/pipeline', roles: ['Admin', 'Manager', 'Coordinator'] },
         { icon: Users, label: 'Customers', path: '/customers', roles: ['Admin', 'Sales Executive', 'Manager', 'Accounts'] },
     ];
 
