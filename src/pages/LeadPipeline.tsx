@@ -10,25 +10,20 @@ import { dataService } from "../services/dataService";
 import { Lead } from "../types";
 import { useAuth } from "../context/AuthContext";
 import {
-    Clock,
     CheckCircle2,
-    XCircle,
-    AlertCircle,
     Calendar,
-    Filter,
-    UserPlus,
     Phone,
     Mail,
-    MoreVertical
+    MoreVertical,
+    User
 } from "lucide-react";
-import SearchableSelect from "../components/SearchableSelect";
 import toast from "react-hot-toast";
 
 const COLUMNS = [
     {
         id: "new",
         title: "New Leads",
-        icon: UserPlus,
+        icon: User,
         color: "text-blue-500",
         bg: "bg-blue-50",
         border: "border-blue-200",
@@ -75,8 +70,6 @@ const LeadPipeline = () => {
     const { user } = useAuth();
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
-    const [users, setUsers] = useState<any[]>([]);
-    const [selectedUser, setSelectedUser] = useState<string>('all');
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [scrollProgress, setScrollProgress] = useState(0);
