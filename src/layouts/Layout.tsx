@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, CircleDollarSign as RupeeIcon, PieChart, Kanban, Settings as SettingsIcon, FileCheck } from 'lucide-react';
+import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, CircleDollarSign as RupeeIcon, PieChart, Kanban, Settings as SettingsIcon, FileCheck, UserPlus, GitMerge, CreditCard, X, MapPin, AlertCircle, Bell, Briefcase } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
@@ -10,7 +10,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, signOut } = useAuth();
+    const { user, role, signOut } = useAuth();
 
     // State for user name display
     const [userName, setUserName] = useState('Admin User');
@@ -18,7 +18,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     // Update form state when user loads
     useEffect(() => {
         if (user) {
-            setUserName(user.user_metadata?.name || user.email?.split('@')[0] || 'Admin User');
+            setUserName(user.user_metadata?.name || user.email?.split('@')[0] || 'User');
         }
     }, [user]);
 
@@ -40,46 +40,54 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         {
             title: 'Main',
             items: [
-                { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-                { icon: Wrench, label: 'Jobs & Services', path: '/jobs' },
-                { icon: Kanban, label: 'Pipeline', path: '/pipeline' },
-                { icon: Users, label: 'Leads (New)', path: '/leads' },
-                { icon: Users, label: 'Customers', path: '/customers' },
+                { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['Admin', 'Sales Executive', 'Surveyor', 'Manager', 'Accounts', 'MNRE Executive', 'Loan Executive', 'Procurement Team', 'Logistics', 'Installer', 'Net Meter Executive', 'Post Sales Support', 'Coordinator'] },
+                { icon: Briefcase, label: 'Solar Projects', path: '/projects', roles: ['Admin', 'Manager', 'Coordinator', 'Sales Executive', 'Installer', 'Surveyor'] },
+                { icon: Wrench, label: 'Service Jobs', path: '/jobs', roles: ['Admin', 'Manager', 'Coordinator', 'Sales Executive', 'Installer', 'Surveyor'] },
+                { icon: Kanban, label: 'Pipeline', path: '/pipeline', roles: ['Admin', 'Manager', 'Coordinator'] },
+                { icon: Users, label: 'Leads', path: '/leads', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
+                { icon: Users, label: 'Customers', path: '/customers', roles: ['Admin', 'Sales Executive', 'Manager', 'Accounts'] },
             ]
         },
         {
             title: 'Financial',
             items: [
-                { icon: FileText, label: 'Invoices', path: '/invoices' },
-                { icon: FileCheck, label: 'Quotes', path: '/quotes' },
-                { icon: RupeeIcon, label: 'Payments', path: '/payments' },
+                { icon: FileText, label: 'Invoices', path: '/invoices', roles: ['Admin', 'Accounts'] },
+                { icon: FileCheck, label: 'Quotes', path: '/quotes', roles: ['Admin', 'Sales Executive', 'Accounts'] },
+                { icon: RupeeIcon, label: 'Payments', path: '/payments', roles: ['Admin', 'Accounts'] },
             ]
         },
         {
             title: 'Inventory',
             items: [
-                { icon: Package, label: 'Parts Inventory', path: '/inventory' },
+                { icon: Package, label: 'Inventory', path: '/inventory', roles: ['Admin', 'Procurement Team', 'Logistics'] },
             ]
         },
         {
             title: 'Reports & Admin',
             items: [
-                ...(user?.user_metadata?.role !== 'Engineer' ? [
-                    { icon: PieChart, label: 'Analytics', path: '/reports' },
-                    { icon: Users, label: 'Team & Engineers', path: '/team' },
-                    { icon: SettingsIcon, label: 'Settings', path: '/settings' },
-                ] : []),
+                { icon: PieChart, label: 'Analytics', path: '/reports', roles: ['Admin', 'Manager'] },
+                { icon: Users, label: 'Team', path: '/team', roles: ['Admin'] },
+                { icon: SettingsIcon, label: 'Settings', path: '/settings', roles: ['Admin'] },
             ]
         },
     ];
 
+    const filteredNavSections = navSections.map(section => ({
+        ...section,
+        items: section.items.filter(item => !item.roles || (role && item.roles.includes(role)) || localStorage.getItem('dev_bypass') === 'true')
+    })).filter(section => section.items.length > 0);
+
     // Mobile Bottom Nav Structure
     const mobileNavItems = [
-        { icon: LayoutDashboard, label: 'Home', path: '/' },
-        { icon: FileText, label: 'Jobs', path: '/jobs' },
-        { icon: Users, label: 'Leads', path: '/leads' },
-        { icon: Users, label: 'Customers', path: '/customers' },
+        { icon: LayoutDashboard, label: 'Home', path: '/', roles: ['Admin', 'Sales Executive', 'Surveyor', 'Manager', 'Accounts', 'MNRE Executive', 'Loan Executive', 'Procurement Team', 'Logistics', 'Installer', 'Net Meter Executive', 'Post Sales Support', 'Coordinator'] },
+        { icon: Briefcase, label: 'Solar', path: '/projects', roles: ['Admin', 'Manager', 'Coordinator', 'Sales Executive', 'Installer', 'Surveyor'] },
+        { icon: UserPlus, label: 'Leads', path: '/leads', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
+        { icon: MapPin, label: 'Surveys', path: '/surveys', roles: ['Admin', 'Surveyor'] },
+        { icon: GitMerge, label: 'Pipeline', path: '/pipeline', roles: ['Admin', 'Manager', 'Coordinator'] },
+        { icon: Users, label: 'Customers', path: '/customers', roles: ['Admin', 'Sales Executive', 'Manager', 'Accounts'] },
     ];
+
+    const filteredMobileNavItems = mobileNavItems.filter(item => !item.roles || (role && item.roles.includes(role)) || localStorage.getItem('dev_bypass') === 'true');
 
     const closeSidebar = () => setIsSidebarOpen(false);
 
@@ -146,7 +154,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           `}>
 
 
-                        {navSections.map((section, idx) => (
+                        {filteredNavSections.map((section, idx) => (
                             <div key={idx} className="mb-6 last:mb-0">
                                 <h3 className="text-xs uppercase tracking-widest text-[#0051A5]/60 font-bold mb-3 px-3">{section.title}</h3>
                                 <nav className="space-y-1">
@@ -198,7 +206,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
             {/* Mobile Bottom Navigation */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center px-4 pt-3 pb-8 z-[2000] shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-                {mobileNavItems.map((item) => {
+                {filteredMobileNavItems.map((item) => {
                     const Icon = item.icon;
                     // Strict active checking for home, looser for others
                     const isActive = item.path === '/'

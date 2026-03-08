@@ -1,4 +1,4 @@
-import { Bell, Plug as Plus, Users, FileText, Calendar, ArrowUpRight, Filter, CircleDollarSign as RupeeIcon, Wrench, AlertCircle, Package } from 'lucide-react';
+import { Bell, Plug as Plus, Users, Calendar, ArrowUpRight, Filter, CircleDollarSign as RupeeIcon, Wrench, AlertCircle, Package, Briefcase } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Job } from '../types';
@@ -234,11 +234,11 @@ const Dashboard = () => {
     ];
 
     const quickActions = [
-        { icon: Plus, title: 'New Job', desc: 'Log installation', path: '/jobs', color: 'bg-blue-50 text-blue-600', mColor: 'bg-[#E6F0FF] text-[#0051A5]' },
-        { icon: Wrench, title: 'Inventory', desc: 'Solar parts', path: '/inventory', color: 'bg-green-50 text-green-600', mColor: 'bg-[#FFF3E6] text-[#FF6B00]' },
+        { icon: Briefcase, title: 'Solar Projects', desc: 'Solar workflow', path: '/projects', color: 'bg-orange-50 text-orange-600', mColor: 'bg-[#FFF3E6] text-[#FF6B00]' },
+        { icon: Plus, title: 'New Job', desc: 'Service log', path: '/jobs', color: 'bg-blue-50 text-blue-600', mColor: 'bg-[#E6F0FF] text-[#0051A5]' },
         { icon: Users, title: 'Customers', desc: 'Sites & contacts', path: '/customers', color: 'bg-blue-50 text-blue-600', mColor: 'bg-[#E6F9F3] text-[#00A862]' },
-        { icon: FileText, title: 'All Jobs', desc: 'Full list', path: '/jobs', color: 'bg-orange-50 text-orange-600', mColor: 'bg-[#FFE6E6] text-[#DC3545]' },
-        { icon: Calendar, title: 'Monthly Invoice', desc: 'Bill site account', path: '/invoices', color: 'bg-indigo-50 text-indigo-600', mColor: 'bg-indigo-50 text-indigo-600' },
+        { icon: Wrench, title: 'Service Jobs', desc: 'Full list', path: '/jobs', color: 'bg-indigo-50 text-indigo-600', mColor: 'bg-indigo-50 text-indigo-600' },
+        { icon: Package, title: 'Inventory', desc: 'Solar parts', path: '/inventory', color: 'bg-green-50 text-green-600', mColor: 'bg-[#FFE6E6] text-[#DC3545]' },
     ];
 
     // Format date for mobile header

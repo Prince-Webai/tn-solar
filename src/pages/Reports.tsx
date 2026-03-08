@@ -38,6 +38,8 @@ const Reports = () => {
     const [inventoryValue, setInventoryValue] = useState(0);
     const [topCustomers, setTopCustomers] = useState<any[]>([]);
     const [allInvoices, setAllInvoices] = useState<Invoice[]>([]);
+    const [totalProfit, setTotalProfit] = useState(0);
+    const [avgMargin, setAvgMargin] = useState(0);
 
     // Date Range Filter State
     const [filterType, setFilterType] = useState<'all' | 'month' | 'year' | 'custom'>('all');
@@ -118,6 +120,18 @@ const Reports = () => {
                 : jobs;
 
             setAllInvoices(filteredInvoices);
+
+            // Calculate Profit: Revenue - Estimated Costs
+            // Assuming jobs link to material costs via job_items/inventory
+            const totalRevenue = filteredInvoices.reduce((acc, curr) => acc + (curr.total_amount || 0), 0);
+
+            // For now, estimating cost as 60% of revenue if costs aren't explicitly tracked per invoice
+            // In a full system, we'd join with actual material costs
+            const estimatedCost = totalRevenue * 0.65;
+            const profit = totalRevenue - estimatedCost;
+            setTotalProfit(profit);
+            setAvgMargin(totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0);
+
             // Chart always uses unfiltered invoices for Monthly view to show trend
             processRevenueData(invoices);
             processJobStatusData(filteredJobs);
@@ -428,10 +442,9 @@ const Reports = () => {
                 </div>
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
                     <div>
-                        <p className="text-slate-500 text-sm font-medium">Revenue ({filterType === 'all' ? 'All Time' : filterType === 'year' ? 'This Year' : 'Selected Period'})</p>
-                        <h3 className="text-2xl font-bold text-slate-900 mt-1">
-                            ₹{allInvoices.reduce((acc, curr) => acc + (curr.total_amount || 0), 0).toLocaleString()}
-                        </h3>
+                        <p className="text-slate-500 text-sm font-medium">Estimated Gross Profit</p>
+                        <h3 className="text-2xl font-bold text-blue-600 mt-1">₹{totalProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</h3>
+                        <p className="text-xs text-slate-400 font-medium">Avg. Margin: {avgMargin.toFixed(1)}%</p>
                     </div>
                     <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
                         <TrendingUp size={24} />
@@ -659,6 +672,7 @@ const Reports = () => {
                             <tr>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Customer</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Total Spend</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Est. Profit</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase text-right">Contribution</th>
                             </tr>
                         </thead>
@@ -671,6 +685,7 @@ const Reports = () => {
                                     <tr key={index} className="hover:bg-slate-50/50">
                                         <td className="px-6 py-4 font-medium text-slate-900">{customer.name}</td>
                                         <td className="px-6 py-4 text-slate-600 text-right">₹{customer.value.toLocaleString()}</td>
+                                        <td className="px-6 py-4 text-emerald-600 text-right font-bold">₹{(customer.value * 0.35).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <span className="text-xs text-slate-500">{percentage.toFixed(1)}%</span>

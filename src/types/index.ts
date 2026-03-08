@@ -119,6 +119,9 @@ export interface Quote {
     total_amount: number;
     status: 'draft' | 'pending' | 'accepted' | 'rejected';
     notes?: string;
+    system_type?: 'on-grid' | 'off-grid' | 'hybrid';
+    brand?: string;
+    capacity?: string;
     // Joins
     customers?: Customer;
     quote_items?: QuoteItem[];
@@ -169,11 +172,32 @@ export interface Lead {
     email?: string;
     phone?: string;
     source?: string;
-    status: 'new' | 'contacted' | 'qualified' | 'unqualified' | 'converted';
+    status: 'new' | 'contacted' | 'site_visit_scheduled' | 'follow_up' | 'closed_won' | 'closed_lost' | 'converted';
     notes?: string;
     is_converted?: boolean;
     converted_at?: string;
     assigned_to?: string;
+}
+
+export interface Project {
+    id: string;
+    project_number: number;
+    customer_id: string;
+    lead_id?: string;
+    title: string;
+    system_size_kw: number;
+    total_price: number;
+    status: string;
+    current_stage: string;
+    assigned_sales_id?: string;
+    created_at: string;
+    updated_at: string;
+    is_archived: boolean;
+    aadhaar_url?: string;
+    pan_url?: string;
+    eb_bill_url?: string;
+    // Joins
+    customers?: Customer;
 }
 
 export * from './report';

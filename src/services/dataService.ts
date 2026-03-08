@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
-import { Job, Invoice, Customer, InventoryItem, Settings, Lead } from '../types';
+import { Customer, InventoryItem, Job, Invoice, Lead, Project, Settings } from '../types';
+import { auditLogger } from './AuditLogService';
 
 // Helper to check if Supabase is configured
 const isSupabaseConfigured = () => {
@@ -143,29 +144,39 @@ export const dataService = {
     async updateJob(id: string, updates: Partial<Job>): Promise<{ error: any }> {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
 
+        const { data: currentJob } = await supabase
+            .from('jobs')
+            .select('status, customer_id')
+            .eq('id', id)
+            .single();
+
         let shouldRecalculate = false;
         let customerIdToRecalculate: string | null = null;
 
-        // Determine if status is changing to or from 'completed'
-        if (updates.status) {
-            const { data: currentJob } = await supabase
-                .from('jobs')
-                .select('status, customer_id')
-                .eq('id', id)
-                .single();
-
-            if (currentJob && currentJob.status !== updates.status &&
-                (currentJob.status === 'completed' || updates.status === 'completed')) {
+        // Determine if status is changing
+        if (updates.status && currentJob && currentJob.status !== updates.status) {
+            if (currentJob.status === 'completed' || updates.status === 'completed') {
                 shouldRecalculate = true;
                 customerIdToRecalculate = currentJob.customer_id;
             }
+
+            // Log status change
+            await auditLogger.logStatusChange('Survey', id, currentJob.status, updates.status, '');
         }
 
         const result = await supabase.from('jobs').update(updates).eq('id', id);
 
+        // General audit log
+        await auditLogger.log({
+            entity_type: 'Survey',
+            entity_id: id,
+            action: 'UPDATE_JOB',
+            changes: updates,
+            performed_by: ''
+        });
+
         // Trigger secure synchronized recalculation
         if (shouldRecalculate && customerIdToRecalculate && !result.error) {
-            // Using logic added earlier
             await this.recalculateCustomerBalance(customerIdToRecalculate);
         }
 
@@ -176,20 +187,16 @@ export const dataService = {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
 
         try {
-            // 1. Delete job items
             const { error: itemsError } = await supabase.from('job_items').delete().eq('job_id', id);
             if (itemsError) return { error: itemsError };
 
-            // 2. Safely delete associated invoices and their items
             const { data: invoices } = await supabase.from('invoices').select('id').eq('job_id', id);
             if (invoices && invoices.length > 0) {
                 const invoiceIds = invoices.map(i => i.id);
-                // Invoices might have payments in the future, but right now we just delete invoice_items
                 await supabase.from('invoice_items').delete().in('invoice_id', invoiceIds);
                 await supabase.from('invoices').delete().in('id', invoiceIds);
             }
 
-            // 3. Safely delete associated quotes and their items
             const { data: quotes } = await supabase.from('quotes').select('id').eq('job_id', id);
             if (quotes && quotes.length > 0) {
                 const quoteIds = quotes.map(q => q.id);
@@ -197,11 +204,20 @@ export const dataService = {
                 await supabase.from('quotes').delete().in('id', quoteIds);
             }
 
-            // 4. Delete statements linked to this job
             await supabase.from('statements').delete().eq('job_id', id);
 
-            // 5. Finally, delete the job
-            return await supabase.from('jobs').delete().eq('id', id);
+            const { error: finalError } = await supabase.from('jobs').delete().eq('id', id);
+
+            if (!finalError) {
+                await auditLogger.log({
+                    entity_type: 'Survey',
+                    entity_id: id,
+                    action: 'DELETE_JOB',
+                    changes: { deleted: true },
+                    performed_by: ''
+                });
+            }
+            return { error: finalError };
         } catch (error) {
             console.error("Failed to delete job safely", error);
             return { error };
@@ -221,7 +237,6 @@ export const dataService = {
     async deleteInvoice(id: string): Promise<{ error: any }> {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
 
-        // Delete related invoice items first
         await supabase.from('invoice_items').delete().eq('invoice_id', id);
 
         return await supabase.from('invoices').delete().eq('id', id);
@@ -281,25 +296,20 @@ export const dataService = {
     async recalculateCustomerBalance(customerId: string): Promise<number> {
         if (!isSupabaseConfigured()) return 0;
         try {
-            // 1. Sum of all completed jobs
             const { data: completedJobs } = await supabase.from('jobs').select('id').eq('customer_id', customerId).eq('status', 'completed');
             let totalJobValue = 0;
             if (completedJobs && completedJobs.length > 0) {
                 const jobIds = completedJobs.map(j => j.id);
-                // Chunk queries if too many jobs, but simple array is fine for normal loads
                 const { data: jobItems } = await supabase.from('job_items').select('total').in('job_id', jobIds);
                 totalJobValue = (jobItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
             }
 
-            // 2. Sum of all standalone invoices (where job_id is null)
             const { data: standaloneInvoices } = await supabase.from('invoices').select('total_amount').eq('customer_id', customerId).is('job_id', null);
             const totalStandaloneInvoices = (standaloneInvoices || []).reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
 
-            // 3. Sum of all payments (across all invoices)
             const { data: allInvoices } = await supabase.from('invoices').select('amount_paid').eq('customer_id', customerId);
             const totalPaid = (allInvoices || []).reduce((sum, inv) => sum + (inv.amount_paid || 0), 0);
 
-            // 4. Calculate proper balance
             const newBalance = totalJobValue + totalStandaloneInvoices - totalPaid;
 
             await supabase.from('customers').update({ account_balance: newBalance }).eq('id', customerId);
@@ -324,36 +334,115 @@ export const dataService = {
 
     async addLead(lead: Partial<Lead>): Promise<{ data: Lead | null, error: any }> {
         if (!isSupabaseConfigured()) return { data: null, error: 'Supabase not configured' };
-        return await supabase.from('leads').insert([lead]).select().single();
+        const result = await supabase.from('leads').insert([lead]).select().single();
+        if (result.data) {
+            await auditLogger.log({
+                entity_type: 'Lead',
+                entity_id: result.data.id,
+                action: 'CREATE_LEAD',
+                changes: lead,
+                performed_by: ''
+            });
+        }
+        return result;
     },
 
     async updateLead(id: string, updates: Partial<Lead>): Promise<{ error: any }> {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
-        return await supabase.from('leads').update(updates).eq('id', id);
+        const result = await supabase.from('leads').update(updates).eq('id', id);
+        if (!result.error) {
+            await auditLogger.log({
+                entity_type: 'Lead',
+                entity_id: id,
+                action: 'UPDATE_LEAD',
+                changes: updates,
+                performed_by: ''
+            });
+        }
+        return result;
     },
 
     async deleteLead(id: string): Promise<{ error: any }> {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
-        return await supabase.from('leads').delete().eq('id', id);
+        const result = await supabase.from('leads').delete().eq('id', id);
+        if (!result.error) {
+            await auditLogger.log({
+                entity_type: 'Lead',
+                entity_id: id,
+                action: 'DELETE_LEAD',
+                changes: { deleted: true },
+                performed_by: ''
+            });
+        }
+        return result;
+    },
+
+    async getProfilesByRole(role: string): Promise<any[]> {
+        if (!isSupabaseConfigured()) return [];
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('role', role);
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error(`Error fetching profiles for role ${role}: `, error);
+            return [];
+        }
+    },
+
+    async assignLead(leadId: string, userId: string): Promise<{ error: any }> {
+        if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+        return await supabase.from('leads').update({ assigned_to: userId }).eq('id', leadId);
+    },
+
+    async scheduleSiteVisit(leadId: string, visitDate: string, surveyorId?: string): Promise<{ error: any }> {
+        if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+
+        try {
+            const { error: leadError } = await supabase
+                .from('leads')
+                .update({ status: 'site_visit_scheduled' })
+                .eq('id', leadId);
+            if (leadError) throw leadError;
+
+            const { data: lead } = await supabase.from('leads').select('*').eq('id', leadId).single();
+
+            const newJob: Partial<Job> = {
+                customer_id: undefined,
+                service_type: 'Site Survey',
+                status: 'scheduled',
+                date_scheduled: visitDate,
+                notes: `Site Survey for Lead: ${lead?.name}. ${lead?.notes || ''} `,
+                engineer_name: surveyorId ? (await supabase.from('profiles').select('full_name').eq('id', surveyorId).single()).data?.full_name : undefined
+            };
+
+            const { error: jobError } = await supabase.from('jobs').insert([newJob]);
+            if (jobError) throw jobError;
+
+            return { error: null };
+        } catch (error) {
+            console.error('Error scheduling site visit:', error);
+            return { error };
+        }
     },
 
     async convertLeadToCustomer(lead: Lead): Promise<{ data: Customer | null, error: any }> {
         if (!isSupabaseConfigured()) return { data: null, error: 'Supabase not configured' };
 
         try {
-            // 1. Create Customer
             const newCustomer: Partial<Customer> = {
                 name: lead.name,
                 email: lead.email,
                 phone: lead.phone,
-                notes: `Converted from lead source: ${lead.source}. Original notes: ${lead.notes || ''}`,
+                notes: `Converted from lead source: ${lead.source}. Original notes: ${lead.notes || ''} `,
                 status: 'active'
             };
 
             const { data: customer, error: customerError } = await supabase.from('customers').insert([newCustomer]).select().single();
             if (customerError) throw customerError;
 
-            // 2. Mark Lead as Converted
             await supabase.from('leads').update({ status: 'converted', is_converted: true, converted_at: new Date().toISOString() }).eq('id', lead.id);
 
             return { data: customer, error: null };
@@ -361,6 +450,149 @@ export const dataService = {
             console.error('Error converting lead to customer:', error);
             return { data: null, error };
         }
-    }
+    },
 
+    async getProject(id: string): Promise<Project | null> {
+        const { data, error } = await supabase
+            .from('projects')
+            .select('*, customers(*)')
+            .eq('id', id)
+            .single();
+        if (error) {
+            console.error('Error fetching project:', error);
+            return null;
+        }
+        return data;
+    },
+
+    async createProjectFromQuote(quoteId: string) {
+        const { data: quote, error: quoteError } = await supabase
+            .from('quotes')
+            .select('*')
+            .eq('id', quoteId)
+            .single();
+
+        if (quoteError) throw quoteError;
+
+        const { data: project, error: projectError } = await supabase
+            .from('projects')
+            .insert([{
+                customer_id: quote.customer_id,
+                lead_id: quote.lead_id,
+                title: `${quote.capacity || ''} ${quote.brand || ''} Solar Project`,
+                system_size_kw: parseFloat(quote.capacity) || 0,
+                total_price: quote.total_amount,
+                status: 'Project Initiated',
+                current_stage: 'Documentation'
+            }])
+            .select()
+            .single();
+
+        if (projectError) throw projectError;
+
+        await auditLogger.log({
+            entity_type: 'Project',
+            entity_id: project.id,
+            action: 'CREATE_PROJECT_FROM_QUOTE',
+            changes: { quote_id: quoteId, project_number: project.project_number },
+            performed_by: ''
+        });
+
+        await supabase
+            .from('quotes')
+            .update({ status: 'accepted' })
+            .eq('id', quoteId);
+
+        return project;
+    },
+
+    async advanceProjectStage(projectId: string): Promise<{ data: Project | null, error: any }> {
+        if (!isSupabaseConfigured()) return { data: null, error: 'Supabase not configured' };
+
+        const stages = [
+            'Documentation',
+            'MNRE Application',
+            'Loan Process',
+            'Procurement',
+            'Installation',
+            'Net Metering'
+        ];
+
+        try {
+            const { data: project, error: fetchError } = await supabase
+                .from('projects')
+                .select('*')
+                .eq('id', projectId)
+                .single();
+
+            if (fetchError || !project) throw fetchError || new Error('Project not found');
+
+            const currentIndex = stages.indexOf(project.current_stage);
+            if (currentIndex === -1 || currentIndex === stages.length - 1) {
+                return { data: null, error: 'Cannot advance further or invalid stage' };
+            }
+
+            const nextStage = stages[currentIndex + 1];
+
+            // PAYMENT GATE: Installation requires 80% payment
+            if (nextStage === 'Installation') {
+                const { data: invoices } = await supabase
+                    .from('invoices')
+                    .select('total_amount, amount_paid')
+                    .eq('customer_id', project.customer_id)
+                    .eq('status', 'paid');
+
+                const totalPaid = (invoices || []).reduce((sum, inv) => sum + (inv.amount_paid || 0), 0);
+                const paymentPercentage = (totalPaid / project.total_price) * 100;
+
+                if (paymentPercentage < 80) {
+                    return { data: null, error: `Installation requires at least 80% payment. Current: ${paymentPercentage.toFixed(1)}%` };
+                }
+            }
+
+            const { data: updatedProject, error: updateError } = await supabase
+                .from('projects')
+                .update({
+                    current_stage: nextStage,
+                    status: nextStage === 'Net Metering' ? 'Completed' : 'In Progress'
+                })
+                .eq('id', projectId)
+                .select()
+                .single();
+
+            if (updateError) throw updateError;
+
+            await auditLogger.logStatusChange('Project', projectId, project.current_stage, nextStage, '');
+
+            return { data: updatedProject, error: null };
+        } catch (error: any) {
+            console.error('Error advancing project stage:', error);
+            return { data: null, error: error.message || error };
+        }
+    },
+
+    async updateProjectStatus(projectId: string, status: string): Promise<{ data: Project | null, error: any }> {
+        if (!isSupabaseConfigured()) return { data: null, error: 'Supabase not configured' };
+
+        try {
+            const { data: oldProject } = await supabase.from('projects').select('status').eq('id', projectId).single();
+
+            const { data: project, error } = await supabase
+                .from('projects')
+                .update({ status })
+                .eq('id', projectId)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            await auditLogger.logStatusChange('Project', projectId, oldProject?.status || 'Unknown', status, '');
+
+            return { data: project, error: null };
+        } catch (error: any) {
+            console.error('Error updating project status:', error);
+            return { data: null, error: error.message || error };
+        }
+    }
 };
+

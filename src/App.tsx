@@ -12,12 +12,15 @@ import DocumentBuilder from './pages/DocumentBuilder'
 import Payments from './pages/Payments'
 import Reports from './pages/Reports'
 import Team from './pages/Team'
+import SiteSurvey from './pages/SiteSurvey';
 import Settings from './pages/Settings'
 import JobDetails from './pages/JobDetails'
+import Projects from './pages/Projects'
+import ProjectDetails from './pages/ProjectDetails'
 import Leads from './pages/Leads'
-
 import Login from './pages/Login'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import RoleGuard from './components/RoleGuard'
 import { Toaster } from 'react-hot-toast'
 
 // Protected Route Component
@@ -63,9 +66,29 @@ function App() {
                     } />
                     <Route path="/pipeline" element={
                         <ProtectedRoute>
-                            <Layout>
-                                <Pipeline />
-                            </Layout>
+                            <RoleGuard allowedRoles={['Admin', 'Manager', 'Coordinator', 'Sales Executive']}>
+                                <Layout>
+                                    <Pipeline />
+                                </Layout>
+                            </RoleGuard>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/leads" element={
+                        <ProtectedRoute>
+                            <RoleGuard allowedRoles={['Admin', 'Manager', 'Coordinator', 'Sales Executive']}>
+                                <Layout>
+                                    <Leads />
+                                </Layout>
+                            </RoleGuard>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/surveys" element={
+                        <ProtectedRoute>
+                            <RoleGuard allowedRoles={['Admin', 'Manager', 'Coordinator', 'Surveyor']}>
+                                <Layout>
+                                    <SiteSurvey />
+                                </Layout>
+                            </RoleGuard>
                         </ProtectedRoute>
                     } />
                     <Route path="/jobs" element={
@@ -98,9 +121,11 @@ function App() {
                     } />
                     <Route path="/invoices/builder" element={
                         <ProtectedRoute>
-                            <Layout>
-                                <InvoiceBuilder />
-                            </Layout>
+                            <RoleGuard allowedRoles={['Admin', 'Accounts']}>
+                                <Layout>
+                                    <InvoiceBuilder />
+                                </Layout>
+                            </RoleGuard>
                         </ProtectedRoute>
                     } />
                     <Route path="/quotes" element={
@@ -119,9 +144,20 @@ function App() {
                     } />
                     <Route path="/payments" element={
                         <ProtectedRoute>
-                            <Layout>
-                                <Payments />
-                            </Layout>
+                            <RoleGuard allowedRoles={['Admin', 'Accounts']}>
+                                <Layout>
+                                    <Payments />
+                                </Layout>
+                            </RoleGuard>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/leads/:leadId/survey" element={
+                        <ProtectedRoute>
+                            <RoleGuard allowedRoles={['Admin', 'Surveyor']}>
+                                <Layout>
+                                    <SiteSurvey />
+                                </Layout>
+                            </RoleGuard>
                         </ProtectedRoute>
                     } />
                     <Route path="/reports" element={
@@ -140,9 +176,11 @@ function App() {
                     } />
                     <Route path="/settings" element={
                         <ProtectedRoute>
-                            <Layout>
-                                <Settings />
-                            </Layout>
+                            <RoleGuard allowedRoles={['Admin']}>
+                                <Layout>
+                                    <Settings />
+                                </Layout>
+                            </RoleGuard>
                         </ProtectedRoute>
                     } />
 
@@ -153,10 +191,17 @@ function App() {
                             </Layout>
                         </ProtectedRoute>
                     } />
-                    <Route path="/leads" element={
+                    <Route path="/projects" element={
                         <ProtectedRoute>
                             <Layout>
-                                <Leads />
+                                <Projects />
+                            </Layout>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/projects/:id" element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <ProjectDetails />
                             </Layout>
                         </ProtectedRoute>
                     } />

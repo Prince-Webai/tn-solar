@@ -29,12 +29,11 @@ const loadLogoBase64 = (): Promise<string> => {
 // === LOGO ===
 // Right-aligned, 80mm wide x 25mm tall, y=8. Matches reference.
 const addLogo = async (doc: jsPDF) => {
-    const logoW = 80;
-    const logoH = 26;
-    const x = doc.internal.pageSize.width - RIGHT - logoW;
+    const logoSize = 30;
+    const x = doc.internal.pageSize.width - RIGHT - logoSize;
     try {
         const b64 = await loadLogoBase64();
-        doc.addImage(b64, 'PNG', x, 10, logoW, logoH);
+        doc.addImage(b64, 'PNG', x, 8, logoSize, logoSize);
     } catch (e) {
         console.error('Logo load failed', e);
     }
@@ -156,7 +155,7 @@ const addVATAnalysis = (doc: jsPDF, vatRate: number, net: number, vat: number, y
     autoTable(doc, {
         startY: y + 4,
         head: [['VAT Rate %', 'Net', 'VAT', 'Gross']],
-        body: [[`${vatRate.toFixed(2)}%`, `₹${net.toFixed(2)}`, `₹${vat.toFixed(2)}`, `₹${(net + vat).toFixed(2)}`]],
+        body: [[`${vatRate.toFixed(2)}%`, `Rs. ${net.toFixed(2)}`, `Rs. ${vat.toFixed(2)}`, `Rs. ${(net + vat).toFixed(2)}`]],
         theme: 'grid',
         styles: { fontSize: 8, cellPadding: 2 },
         headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
@@ -269,8 +268,8 @@ export const generateInvoice = async (
             return [
                 String(item.description),
                 String(item.quantity),
-                `₹${up.toFixed(2)}`,
-                `₹${total.toFixed(2)}`,
+                `Rs. ${up.toFixed(2)}`,
+                `Rs. ${total.toFixed(2)}`,
             ];
         }),
         theme: 'plain',
@@ -299,11 +298,11 @@ export const generateInvoice = async (
     y = tableBottom + 15;
     doc.setFontSize(9);
     const totals: [string, string][] = [
-        ['Total Net', `₹${netAmount.toFixed(2)}`],
-        ['Total Discount', '₹0.00'],
-        ['Total VAT', `₹${vatAmount.toFixed(2)}`],
-        ['Total Gross', `₹${totalAmount.toFixed(2)}`],
-        ['Less Deposit', '₹0.00'],
+        ['Total Net', `Rs. ${netAmount.toFixed(2)}`],
+        ['Total Discount', 'Rs. 0.00'],
+        ['Total VAT', `Rs. ${vatAmount.toFixed(2)}`],
+        ['Total Gross', `Rs. ${totalAmount.toFixed(2)}`],
+        ['Less Deposit', 'Rs. 0.00'],
     ];
     totals.forEach(([label, val]) => {
         doc.setFont('helvetica', 'normal');
@@ -322,7 +321,7 @@ export const generateInvoice = async (
     doc.setFontSize(13);
     doc.setTextColor(0, 0, 0);
     doc.text('Total Payable', totalsX, totalPayableY);
-    doc.text(`₹${totalAmount.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
+    doc.text(`Rs. ${totalAmount.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
 
     // VAT Analysis on left at same y
     addVATAnalysis(doc, vatRate, netAmount, vatAmount, totalPayableY);
@@ -367,6 +366,9 @@ export const generateQuote = async (
         { label: 'VAT No.', value: settings?.vat_reg_number || 'IE 8252470Q' },
         { label: 'Valid Until', value: '30 Days' },
         { label: 'Terms', value: String(customer.payment_terms || 'On Receipt') },
+        { label: 'System Type', value: String(quote.system_type?.toUpperCase() || 'N/A') },
+        { label: 'Capacity', value: String(quote.capacity || 'N/A') },
+        { label: 'Solar Brand', value: String(quote.brand || 'N/A') },
     ];
     y = addInfoGrid(doc, infoData, y);
 
@@ -381,8 +383,8 @@ export const generateQuote = async (
         body: items.map(i => [
             String(i.description),
             String(i.quantity),
-            `₹${i.unit_price.toFixed(2)}`,
-            `₹${(i.quantity * i.unit_price).toFixed(2)}`,
+            `Rs. ${i.unit_price.toFixed(2)}`,
+            `Rs. ${(i.quantity * i.unit_price).toFixed(2)}`,
         ]),
         theme: 'plain',
         styles: { fontSize: 10, cellPadding: 2 },
@@ -413,11 +415,11 @@ export const generateQuote = async (
     const vatAmount = quote.vat_amount || (quote.total_amount - quote.subtotal);
 
     const totals: [string, string][] = [
-        ['Total Net', `₹${quote.subtotal.toFixed(2)}`],
-        ['Total Discount', '₹0.00'],
-        ['Total VAT', `₹${vatAmount.toFixed(2)}`],
-        ['Total Gross', `₹${quote.total_amount.toFixed(2)}`],
-        ['Less Deposit', '₹0.00'],
+        ['Total Net', `Rs. ${quote.subtotal.toFixed(2)}`],
+        ['Total Discount', 'Rs. 0.00'],
+        ['Total VAT', `Rs. ${vatAmount.toFixed(2)}`],
+        ['Total Gross', `Rs. ${quote.total_amount.toFixed(2)}`],
+        ['Less Deposit', 'Rs. 0.00'],
     ];
 
     totals.forEach(([label, val]) => {
@@ -437,7 +439,7 @@ export const generateQuote = async (
     doc.setFontSize(13);
     doc.setTextColor(0, 0, 0);
     doc.text('Quote Total', totalsX, totalPayableY);
-    doc.text(`₹${quote.total_amount.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
+    doc.text(`Rs. ${quote.total_amount.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
 
     // VAT Analysis on left at same y
     const vatRate = quote.vat_rate || 13.5;
@@ -498,10 +500,10 @@ export const generateStatement = async (
         body: items && items.length > 0 ? items.map(item => [
             String(item?.description || 'N/A'),
             String(item?.quantity || 1),
-            `₹${(item?.unit_price || 0).toFixed(2)}`,
-            `₹${(item?.total || item?.quantity * item?.unit_price || 0).toFixed(2)}`,
+            `Rs. ${(item?.unit_price || 0).toFixed(2)}`,
+            `Rs. ${(item?.total || item?.quantity * item?.unit_price || 0).toFixed(2)}`,
         ]) : [
-            ['Monthly Services & Account Balance', '1', `₹${(statement.total_amount || 0).toFixed(2)}`, `₹${(statement.total_amount || 0).toFixed(2)}`]
+            ['Monthly Services & Account Balance', '1', `Rs. ${(statement.total_amount || 0).toFixed(2)}`, `Rs. ${(statement.total_amount || 0).toFixed(2)}`]
         ],
         theme: 'plain',
         styles: { fontSize: 10, cellPadding: 2 },
@@ -538,11 +540,11 @@ export const generateStatement = async (
     doc.setFontSize(9);
 
     const totals: [string, string][] = [
-        ['Total Net', `₹${netAmount.toFixed(2)}`],
-        ['Total Discount', '₹0.00'],
-        ['Total VAT', `₹${vatAmount.toFixed(2)}`],
-        ['Total Gross', `₹${subtotal.toFixed(2)}`],
-        ['Less Deposit', '₹0.00'],
+        ['Total Net', `Rs. ${netAmount.toFixed(2)}`],
+        ['Total Discount', 'Rs. 0.00'],
+        ['Total VAT', `Rs. ${vatAmount.toFixed(2)}`],
+        ['Total Gross', `Rs. ${subtotal.toFixed(2)}`],
+        ['Less Deposit', 'Rs. 0.00'],
     ];
 
     totals.forEach(([label, val]) => {
@@ -562,7 +564,7 @@ export const generateStatement = async (
     doc.setFontSize(13);
     doc.setTextColor(0, 0, 0);
     doc.text('Statement Total', totalsX, totalPayableY);
-    doc.text(`₹${subtotal.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
+    doc.text(`Rs. ${subtotal.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
 
     // VAT Analysis on left at same y
     addVATAnalysis(doc, vatRate, netAmount, vatAmount, totalPayableY);
@@ -634,8 +636,8 @@ export const generateOneTimeInvoice = async (
         body: items.map(item => [
             String(item.description),
             String(item.quantity),
-            `₹${Number(item.unitPrice).toFixed(2)}`,
-            `₹${(item.quantity * item.unitPrice).toFixed(2)}`,
+            `Rs. ${Number(item.unitPrice).toFixed(2)}`,
+            `Rs. ${(item.quantity * item.unitPrice).toFixed(2)}`,
         ]),
         theme: 'plain',
         styles: { fontSize: 10, cellPadding: 2 },
@@ -655,7 +657,7 @@ export const generateOneTimeInvoice = async (
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.text('Total Payable:', pageWidth - RIGHT - 60, y);
-    doc.text(`₹${totalAmount.toFixed(2)}`, pageWidth - RIGHT, y, { align: 'right' });
+    doc.text(`Rs. ${totalAmount.toFixed(2)}`, pageWidth - RIGHT, y, { align: 'right' });
 
     addBankDetails(doc, doc.internal.pageSize.height - 55, settings);
     addFooter(doc);
