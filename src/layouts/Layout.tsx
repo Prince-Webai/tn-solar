@@ -44,6 +44,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 { icon: Briefcase, label: 'Solar Projects', path: '/projects', roles: ['Admin', 'Manager', 'Coordinator', 'Sales Executive', 'Installer', 'Surveyor'] },
                 { icon: Wrench, label: 'Service Jobs', path: '/jobs', roles: ['Admin', 'Manager', 'Coordinator', 'Sales Executive', 'Installer', 'Surveyor'] },
                 { icon: Kanban, label: 'Pipeline', path: '/pipeline', roles: ['Admin', 'Manager', 'Coordinator'] },
+                { icon: LayoutDashboard, label: 'CRM Workspace (New)', path: '/crm', roles: ['Admin', 'Manager', 'Sales Executive', 'Coordinator'] },
                 { icon: GitMerge, label: 'Lead Pipeline', path: '/leads/pipeline', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
                 { icon: Users, label: 'Leads', path: '/leads', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
                 { icon: Users, label: 'Customers', path: '/customers', roles: ['Admin', 'Sales Executive', 'Manager', 'Accounts'] },

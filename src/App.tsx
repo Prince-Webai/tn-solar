@@ -18,6 +18,13 @@ import JobDetails from './pages/JobDetails'
 import Projects from './pages/Projects'
 import ProjectDetails from './pages/ProjectDetails'
 import Leads from './pages/Leads'
+import CRMLayout from './layouts/CRMLayout'
+import CRMDashboard from './pages/crm/CRMDashboard'
+import CRMContacts from './pages/crm/CRMContacts'
+import CRMPipeline from './pages/crm/CRMPipeline'
+import CRMLeadDetails from './pages/crm/CRMLeadDetails'
+import CRMConversations from './pages/crm/CRMConversations'
+import CRMAnalytics from './pages/crm/CRMAnalytics'
 import LeadPipeline from './pages/LeadPipeline'
 import LeadDetails from './pages/LeadDetails'
 import CustomFieldSettings from './pages/CustomFieldSettings'
@@ -58,6 +65,62 @@ function App() {
                 <Toaster position="top-right" />
                 <Routes>
                     <Route path="/login" element={<Login />} />
+
+                    {/* CRM Workspace Routes */}
+                    <Route path="/crm" element={
+                        <ProtectedRoute>
+                            <RoleGuard allowedRoles={['Admin', 'Manager', 'Sales Executive', 'Coordinator']}>
+                                <CRMLayout>
+                                    <CRMDashboard />
+                                </CRMLayout>
+                            </RoleGuard>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/crm/contacts" element={
+                        <ProtectedRoute>
+                            <RoleGuard allowedRoles={['Admin', 'Manager', 'Sales Executive', 'Coordinator']}>
+                                <CRMLayout>
+                                    <CRMContacts />
+                                </CRMLayout>
+                            </RoleGuard>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/crm/pipeline" element={
+                        <ProtectedRoute>
+                            <RoleGuard allowedRoles={['Admin', 'Manager', 'Sales Executive', 'Coordinator']}>
+                                <CRMLayout>
+                                    <CRMPipeline />
+                                </CRMLayout>
+                            </RoleGuard>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/crm/leads/:id" element={
+                        <ProtectedRoute>
+                            <RoleGuard allowedRoles={['Admin', 'Manager', 'Sales Executive', 'Coordinator']}>
+                                <CRMLayout>
+                                    <CRMLeadDetails />
+                                </CRMLayout>
+                            </RoleGuard>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/crm/conversations" element={
+                        <ProtectedRoute>
+                            <RoleGuard allowedRoles={['Admin', 'Manager', 'Sales Executive', 'Coordinator']}>
+                                <CRMLayout>
+                                    <CRMConversations />
+                                </CRMLayout>
+                            </RoleGuard>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/crm/analytics" element={
+                        <ProtectedRoute>
+                            <RoleGuard allowedRoles={['Admin', 'Manager', 'Sales Executive', 'Coordinator']}>
+                                <CRMLayout>
+                                    <CRMAnalytics />
+                                </CRMLayout>
+                            </RoleGuard>
+                        </ProtectedRoute>
+                    } />
 
                     {/* Protected Routes */}
                     <Route path="/" element={
