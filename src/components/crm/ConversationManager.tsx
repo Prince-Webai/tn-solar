@@ -81,57 +81,47 @@ const ConversationManager = ({ lead, onUpdate }: ConversationManagerProps) => {
         }
     };
 
+    const [pendingActivity, setPendingActivity] = useState<string | null>(null);
+
     const handleSendNote = async () => {
-        if (!noteText.trim() || !lead) return;
+        if (!lead || (!noteText.trim() && !pendingActivity)) return;
         setSending(true);
-        const { error } = await dataService.updateLead(lead.id, { notes: noteText });
+        
+        let activityLog = noteText;
+        if (pendingActivity) {
+            activityLog = noteText ? `[${pendingActivity}] ${noteText}` : `Activity: ${pendingActivity}`;
+        }
+
+        const action = pendingActivity 
+            ? `LOG_${pendingActivity.toUpperCase().replace(/\s+/g, '_')}`
+            : 'LOG_NOTE';
+
+        let statusUpdate: string | undefined;
+        if (pendingActivity === 'Site visit booked') statusUpdate = 'site_visit_scheduled';
+        if (pendingActivity === 'Site visit completed') statusUpdate = 'site_visit_completed';
+        if (pendingActivity === 'Site visit cancelled') statusUpdate = 'site_visit_cancelled';
+        if (pendingActivity === 'Drop') statusUpdate = 'dropped';
+
+        const { error } = await dataService.updateLead(lead.id, { 
+            notes: activityLog,
+            ...(statusUpdate ? { status: statusUpdate } : {})
+        } as any);
+
         if (error) {
-            toast.error('Failed to save note');
+            toast.error('Failed to save log');
         } else {
             const newEntry: NoteEntry = {
                 type: 'note',
-                text: noteText,
-                time: new Date().toISOString(),
-                action: 'LOG_NOTE'
-            };
-            setActivities(prev => [...prev, newEntry]);
-            setNoteText('');
-            toast.success('Note logged!');
-            if (onUpdate) onUpdate();
-            setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-        }
-        setSending(false);
-    };
-
-    const handleLogActivity = async (activityType: string) => {
-        if (!lead) return;
-        setSending(true);
-        const action = `LOG_${activityType.toUpperCase().replace(/\s+/g, '_')}`;
-        
-        let statusUpdate: string | undefined;
-        if (activityType === 'Site visit booked') statusUpdate = 'site_visit_scheduled';
-        if (activityType === 'Site visit completed') statusUpdate = 'site_visit_completed';
-        if (activityType === 'Site visit cancelled') statusUpdate = 'site_visit_cancelled';
-        if (activityType === 'Drop') statusUpdate = 'dropped';
-
-        const { error } = await dataService.updateLead(lead.id, { 
-            notes: `Activity: ${activityType}`,
-            ...(statusUpdate ? { status: statusUpdate } : {})
-        } as any);
-        
-        if (!error) {
-            const newEntry: NoteEntry = {
-                type: 'note',
-                text: `${activityType}`,
+                text: activityLog,
                 time: new Date().toISOString(),
                 action: action
             };
             setActivities(prev => [...prev, newEntry]);
-            toast.success(`${activityType} logged!`);
+            setNoteText('');
+            setPendingActivity(null);
+            toast.success(pendingActivity ? 'Activity logged!' : 'Note saved!');
             if (onUpdate) onUpdate();
             setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-        } else {
-            toast.error('Failed to log activity');
         }
         setSending(false);
     };
@@ -310,7 +300,7 @@ const ConversationManager = ({ lead, onUpdate }: ConversationManagerProps) => {
                         <select 
                             className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-600 outline-none focus:border-[#00a4bd] cursor-pointer"
                             onChange={(e) => {
-                                if (e.target.value) handleLogActivity(e.target.value);
+                                if (e.target.value) setPendingActivity(e.target.value);
                                 e.target.value = '';
                             }}
                         >
@@ -331,7 +321,10 @@ const ConversationManager = ({ lead, onUpdate }: ConversationManagerProps) => {
                         <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block px-1">Fill Form</label>
                         <select 
                             className="w-full bg-[#00a4bd]/5 border border-[#00a4bd]/20 rounded-lg px-2 py-1.5 text-[10px] font-bold text-[#00a4bd] outline-none focus:border-[#00a4bd] cursor-pointer"
-                            onChange={(e) => setShowForm(e.target.value)}
+                            onChange={(e) => {
+                                setShowForm(e.target.value);
+                                setPendingActivity(null);
+                            }}
                             value={showForm || ''}
                         >
                             <option value="">Select Form...</option>
@@ -343,22 +336,33 @@ const ConversationManager = ({ lead, onUpdate }: ConversationManagerProps) => {
 
                 {/* Note Input */}
                 {!showForm && (
-                    <div className="flex gap-2">
-                        <textarea
-                            value={noteText}
-                            onChange={e => setNoteText(e.target.value)}
-                            placeholder="Type a note here..."
-                            rows={1}
-                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendNote(); } }}
-                            className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:border-[#00a4bd] focus:ring-2 focus:ring-[#00a4bd]/10 resize-none transition-all"
-                        />
-                        <button
-                            onClick={handleSendNote}
-                            disabled={sending || !noteText.trim()}
-                            className="px-3 bg-[#00a4bd] text-white rounded-xl hover:bg-[#008ba1] transition-all disabled:opacity-40 flex items-center justify-center shadow-lg shadow-[#00a4bd]/20"
-                        >
-                            <Send size={14} />
-                        </button>
+                    <div className="space-y-2">
+                        {pendingActivity && (
+                            <div className="flex items-center justify-between bg-blue-50 border border-blue-100 px-3 py-1 rounded-lg text-[10px] font-black text-blue-600 uppercase tracking-widest animate-fadeIn">
+                                <span className="flex items-center gap-2">
+                                    {noteIcon(`LOG_${pendingActivity.toUpperCase().replace(/\s+/g, '_')}`)}
+                                    Logging: {pendingActivity}
+                                </span>
+                                <button onClick={() => setPendingActivity(null)} className="hover:text-blue-800"><X size={12} /></button>
+                            </div>
+                        )}
+                        <div className="flex gap-2">
+                            <textarea
+                                value={noteText}
+                                onChange={e => setNoteText(e.target.value)}
+                                placeholder={pendingActivity ? "Add a note to this activity..." : "Type a note here..."}
+                                rows={1}
+                                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendNote(); } }}
+                                className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:border-[#00a4bd] focus:ring-2 focus:ring-[#00a4bd]/10 resize-none transition-all"
+                            />
+                            <button
+                                onClick={handleSendNote}
+                                disabled={sending || (!noteText.trim() && !pendingActivity)}
+                                className="px-3 bg-[#00a4bd] text-white rounded-xl hover:bg-[#008ba1] transition-all disabled:opacity-40 flex items-center justify-center shadow-lg shadow-[#00a4bd]/20"
+                            >
+                                <Send size={14} />
+                            </button>
+                        </div>
                     </div>
                 )}
 
