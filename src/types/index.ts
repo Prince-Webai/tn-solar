@@ -173,13 +173,24 @@ export interface Lead {
     email?: string;
     phone?: string;
     source?: string;
-    status: 'new' | 'contacted' | 'site_visit_scheduled' | 'follow_up' | 'closed_won' | 'closed_lost' | 'converted';
+    status: 'new' | 'contacted' | 'site_visit_scheduled' | 'site_visit_completed' | 'follow_up' | 'closed_won' | 'closed_lost' | 'converted';
     notes?: string;
     is_converted?: boolean;
     converted_at?: string;
     assigned_to?: string;
     custom_fields?: any;
+    // New fields
+    contact_name?: string;
+    district?: string;
+    pincode?: string;
+    last_month_bill?: number;
+    proposed_kw?: number;
+    lead_type?: 'Residential' | 'Commercial' | 'Agriculture';
+    lead_owner?: string;
+    last_modified_at?: string;
+    site_visit_datetime?: string;
 }
+
 
 export interface Project {
     id: string;

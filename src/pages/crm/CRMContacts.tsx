@@ -1,18 +1,20 @@
 import { useState, useEffect } from 'react';
 import {
     Search, Plus, Trash2, ChevronDown, ChevronUp, Phone, Mail,
-    MapPin, Save, X, Calendar, Edit3, Check,
+    MapPin, Save, X, Calendar, Edit3, Check, ArrowRight,
     Settings, Type, Hash, CheckSquare
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { Lead } from '../../types';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const STATUS_OPTIONS = [
     { value: 'new',                   label: 'New Lead',            color: 'bg-blue-100 text-blue-700 border-blue-200' },
     { value: 'contacted',             label: 'Contacted',           color: 'bg-amber-100 text-amber-700 border-amber-200' },
-    { value: 'site_visit_scheduled',  label: 'Site Visit',          color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+    { value: 'site_visit_scheduled',  label: 'Site Visit Scheduled',color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+    { value: 'site_visit_completed',  label: 'Site Visit Completed',color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
     { value: 'follow_up',             label: 'Follow Up',           color: 'bg-purple-100 text-purple-700 border-purple-200' },
     { value: 'closed_won',            label: 'Closed Won',          color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
     { value: 'closed_lost',           label: 'Closed Lost',         color: 'bg-red-100 text-red-700 border-red-200' },
@@ -82,6 +84,7 @@ const InlineField = ({
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 const CRMContacts = () => {
+    const navigate = useNavigate();
     const [leads, setLeads] = useState<Lead[]>([]);
     const [fieldDefs, setFieldDefs] = useState<CustomFieldDef[]>([]);
     const [loading, setLoading] = useState(true);
@@ -320,7 +323,11 @@ const CRMContacts = () => {
                                 </div>
                                 {/* Actions */}
                                 <div className="flex items-center gap-1 justify-end">
-                                    <button onClick={() => handleExpand(lead)} title="View / Edit details"
+                                    <button onClick={() => navigate(`/crm/leads/${lead.id}`)} title="View full details"
+                                        className="p-1.5 rounded-lg text-slate-400 hover:bg-[#00a4bd]/10 hover:text-[#00a4bd] transition-all">
+                                        <ArrowRight size={15} />
+                                    </button>
+                                    <button onClick={() => handleExpand(lead)} title="Quick Edit details"
                                         className={`p-1.5 rounded-lg transition-all ${isExpanded ? 'bg-[#00a4bd] text-white' : 'text-slate-400 hover:bg-slate-100 hover:text-[#00a4bd]'}`}>
                                         {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                     </button>

@@ -28,6 +28,7 @@ const STATUS_OPTIONS = [
     { value: 'new', label: 'New Lead', color: 'bg-blue-100 text-blue-800' },
     { value: 'contacted', label: 'Contacted', color: 'bg-amber-100 text-amber-800' },
     { value: 'site_visit_scheduled', label: 'Site Visit Scheduled', color: 'bg-indigo-100 text-indigo-800' },
+    { value: 'site_visit_completed', label: 'Site Visit Completed', color: 'bg-emerald-100 text-emerald-800'},
     { value: 'follow_up', label: 'Follow Up', color: 'bg-purple-100 text-purple-800' },
     { value: 'closed_won', label: 'Closed Won', color: 'bg-emerald-100 text-emerald-800' },
     { value: 'closed_lost', label: 'Closed Lost', color: 'bg-red-100 text-red-800' }

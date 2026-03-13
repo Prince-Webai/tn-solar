@@ -2,24 +2,32 @@ import React, { useState, useEffect } from 'react';
 import {
     Plus,
     Search,
-    Mail,
     Phone,
     UserPlus,
     Trash2,
     MessageSquare,
     Facebook,
     Globe,
-    CheckCircle,
     Clock,
     Users,
     Upload,
-    UserCheck,
-    Camera
+    ArrowLeft,
+    MapPin,
+    Zap,
+    Battery,
+    Calendar,
+    History as HistoryIcon,
+    FileText,
+    LayoutDashboard,
+    ArrowRight
 } from 'lucide-react';
+
+
 import { dataService } from '../services/dataService';
 import { Lead } from '../types';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+
 
 const Leads = () => {
     const [leads, setLeads] = useState<Lead[]>([]);
@@ -35,10 +43,20 @@ const Leads = () => {
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
     const [schedulingLead, setSchedulingLead] = useState<Lead | null>(null);
     const [visitData, setVisitData] = useState({ date: '', surveyorId: '' });
+    const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+    const [activities, setActivities] = useState<any[]>([]);
+    const [noteText, setNoteText] = useState('');
+
     const [newLead, setNewLead] = useState<Partial<Lead>>({
         name: '',
+        contact_name: '',
         email: '',
         phone: '',
+        district: '',
+        pincode: '',
+        last_month_bill: undefined,
+        proposed_kw: undefined,
+        lead_type: 'Residential',
         source: 'Web',
         status: 'new',
         notes: ''
@@ -75,9 +93,36 @@ const Leads = () => {
         } else {
             toast.success('Lead added successfully');
             setIsAddModalOpen(false);
-            setNewLead({ name: '', email: '', phone: '', source: 'Web', status: 'new', notes: '' });
+            setNewLead({
+                name: '',
+                contact_name: '',
+                email: '',
+                phone: '',
+                district: '',
+                pincode: '',
+                last_month_bill: undefined,
+                proposed_kw: undefined,
+                lead_type: 'Residential',
+                source: 'Web', 
+                status: 'new', 
+                notes: '' 
+            });
             fetchLeads();
         }
+    };
+
+    const fetchLeadActivities = async (leadId: string) => {
+        const logs = await dataService.getAuditLogs('Lead', leadId);
+        setActivities(logs);
+    };
+
+    const handleSelectLead = async (lead: Lead) => {
+        navigate(`/leads/${lead.id}`);
+    };
+
+    const handleBackToList = () => {
+        setSelectedLead(null);
+        setActivities([]);
     };
 
     const handleConvertToCustomer = async (lead: Lead) => {
@@ -95,13 +140,16 @@ const Leads = () => {
     const handleAssignLead = async (leadId: string, userId: string) => {
         const lead = leads.find(l => l.id === leadId);
         if (userId && lead && lead.status === 'new') {
-            // Auto move to Contacted if assigned (optional logic)
             await dataService.updateLead(leadId, { status: 'contacted', assigned_to: userId });
         } else {
             await dataService.assignLead(leadId, userId);
         }
         toast.success('Lead updated');
         fetchLeads();
+        if (selectedLead?.id === leadId) {
+            setSelectedLead(prev => prev ? { ...prev, assigned_to: userId } : null);
+            fetchLeadActivities(leadId);
+        }
     };
 
     const handleStatusChange = async (lead: Lead, newStatus: string) => {
@@ -117,6 +165,23 @@ const Leads = () => {
         } else {
             toast.success('Status updated');
             fetchLeads();
+            if (selectedLead?.id === lead.id) {
+                setSelectedLead(prev => prev ? { ...prev, status: newStatus as any } : null);
+                fetchLeadActivities(lead.id);
+            }
+        }
+    };
+
+    const handleSaveNote = async () => {
+        if (!selectedLead || !noteText.trim()) return;
+        
+        const { error } = await dataService.updateLead(selectedLead.id, { notes: noteText });
+        if (error) {
+            toast.error('Failed to save note');
+        } else {
+            toast.success('Note added');
+            setNoteText('');
+            fetchLeadActivities(selectedLead.id);
         }
     };
 
@@ -195,6 +260,7 @@ const Leads = () => {
             case 'new': return 'bg-blue-100 text-blue-800';
             case 'contacted': return 'bg-amber-100 text-amber-800';
             case 'site_visit_scheduled': return 'bg-purple-100 text-purple-800';
+            case 'site_visit_completed': return 'bg-emerald-100 text-emerald-800';
             case 'follow_up': return 'bg-indigo-100 text-indigo-800';
             case 'closed_won': return 'bg-green-100 text-green-800';
             case 'closed_lost': return 'bg-red-100 text-red-800';
@@ -219,7 +285,8 @@ const Leads = () => {
                 </div>
                 <button
                     onClick={() => setIsAddModalOpen(true)}
-                    className="flex items-center gap-2 bg-[#0051A5] text-white px-4 py-2.5 rounded-xl font-bold hover:bg-[#003d7a] transition-all shadow-lg shadow-blue-900/20"
+                    className="flex items-center gap-2 bg-[#FF8A00] text-white px-4 py-2.5 rounded-xl font-bold hover:bg-[#e67c00] transition-all shadow-lg shadow-orange-900/20"
+
                 >
                     <Plus size={20} />
                     Add New Lead
@@ -248,6 +315,7 @@ const Leads = () => {
                         <option value="new">New</option>
                         <option value="contacted">Contacted</option>
                         <option value="site_visit_scheduled">Site Visit Scheduled</option>
+                        <option value="site_visit_completed">Site Visit Completed</option>
                         <option value="follow_up">Follow Up</option>
                         <option value="closed_won">Closed Won</option>
                         <option value="closed_lost">Closed Lost</option>
@@ -264,118 +332,308 @@ const Leads = () => {
                 </div>
             </div>
 
-            {/* Leads Grid/List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {loading ? (
-                    <div className="col-span-full py-12 text-center text-slate-500">Loading leads...</div>
-                ) : filteredLeads.length === 0 ? (
-                    <div className="col-span-full py-12 text-center bg-white rounded-2xl border-2 border-dashed border-slate-200">
-                        <Users size={18} className="mx-auto text-slate-200 mb-4" />
-                        <p className="text-slate-500 font-medium">No leads found matching your criteria</p>
+            {/* Leads Table/Grid View */}
+            {!selectedLead ? (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-slate-100">
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Lead Name</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Contact</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">District</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Type</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Created</th>
+                                <th className="px-6 py-4 text-right"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-12 text-center text-slate-500">Loading leads...</td>
+                                </tr>
+                            ) : filteredLeads.length === 0 ? (
+                                <tr>
+                                    <td colSpan={7} className="px-6 py-12 text-center">
+                                        <Users size={18} className="mx-auto text-slate-200 mb-4" />
+                                        <p className="text-slate-500 font-medium">No leads found matching your criteria</p>
+                                    </td>
+                                </tr>
+                            ) : filteredLeads.map(lead => (
+                                <tr key={lead.id} className="hover:bg-slate-50/50 transition-colors group">
+                                    <td className="px-6 py-4">
+                                        <button
+                                            onClick={() => handleSelectLead(lead)}
+                                            className="text-sm font-bold text-slate-900 hover:text-[#00a4bd] transition-colors flex items-center gap-2"
+                                        >
+                                            {lead.name}
+                                            <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-[#00a4bd]" />
+
+                                        </button>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="text-xs font-medium text-slate-600">{lead.phone || 'No phone'}</div>
+                                        <div className="text-[10px] text-slate-400">{lead.email || 'No email'}</div>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                                        {lead.district || '—'}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(lead.status)}`}>
+                                            {lead.status.replace(/_/g, ' ')}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
+                                            {lead.lead_type || 'Residential'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-xs text-slate-500">
+                                        {lead.created_at ? new Date(lead.created_at).toLocaleDateString() : 'N/A'}
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={() => handleSelectLead(lead)}
+                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
+                                                title="View Lead Details"
+                                            >
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-[10px] font-bold uppercase shrink-0">View Lead</span>
+                                                    <ArrowRight size={14} />
+                                                </div>
+                                            </button>
+                                            {!lead.is_converted && (
+                                                <button
+                                                    onClick={() => handleConvertToCustomer(lead)}
+                                                    className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                    title="Convert to Customer"
+                                                >
+                                                    <UserPlus size={16} />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => handleDeleteLead(lead.id)}
+                                                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Delete Lead"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ) : (
+                /* Split-Screen Detail View */
+                <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={handleBackToList}
+                            className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition-all text-sm"
+                        >
+                            <ArrowLeft size={18} />
+                            Back to Leads
+                        </button>
+                        <div className="h-8 w-px bg-slate-200"></div>
+                        <h2 className="text-xl font-bold text-slate-900">{selectedLead.name}</h2>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(selectedLead.status)}`}>
+                            {selectedLead.status.replace(/_/g, ' ')}
+                        </span>
                     </div>
-                ) : filteredLeads.map(lead => (
-                    <div key={lead.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow group">
-                        <div className="flex justify-between items-start mb-4">
-                            <select
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider outline-none border-none cursor-pointer ${getStatusStyle(lead.status)}`}
-                                value={lead.status}
-                                onChange={(e) => handleStatusChange(lead, e.target.value)}
-                            >
-                                <option value="new">New</option>
-                                <option value="contacted">Contacted</option>
-                                <option value="site_visit_scheduled">Site Visit Scheduled</option>
-                                <option value="follow_up">Follow Up</option>
-                                <option value="closed_won">Closed Won</option>
-                                <option value="closed_lost">Closed Lost</option>
-                            </select>
-                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {!lead.is_converted && (
-                                    <button
-                                        onClick={() => handleConvertToCustomer(lead)}
-                                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                        title="Convert to Customer"
-                                    >
-                                        <UserPlus size={18} />
-                                    </button>
-                                )}
-                                <button
-                                    onClick={() => handleDeleteLead(lead.id)}
-                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Delete Lead"
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Left Column: Lead Details Card */}
+                        <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-8">
+                            <div>
+                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#00a4bd] mb-6 flex items-center gap-2">
+
+                                    <LayoutDashboard size={14} />
+                                    Lead Information
+                                </h3>
+                                
+                                <div className="grid grid-cols-2 gap-y-6 gap-x-8">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Contact Name</label>
+                                        <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                            <Users size={14} className="text-slate-300" />
+                                            {selectedLead.contact_name || selectedLead.name}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Phone / Mobile</label>
+                                        <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                            <Phone size={14} className="text-slate-300" />
+                                            {selectedLead.phone || 'N/A'}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">District / Location</label>
+                                        <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                            <MapPin size={14} className="text-slate-300" />
+                                            {selectedLead.district || '—'}, {selectedLead.pincode || '—'}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Lead Type</label>
+                                        <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                            <Zap size={14} className="text-slate-300" />
+                                            {selectedLead.lead_type || 'Residential'}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Proposed KW</label>
+                                        <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                            <Battery size={14} className="text-slate-300" />
+                                            {selectedLead.proposed_kw ? `${selectedLead.proposed_kw} KW` : 'Not Proposed'}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Monthly Bill</label>
+                                        <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                            <FileText size={14} className="text-slate-300" />
+                                            {selectedLead.last_month_bill ? `₹${selectedLead.last_month_bill}` : '—'}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Site Visit</label>
+                                        <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                            <Calendar size={14} className="text-slate-300" />
+                                            {selectedLead.site_visit_datetime ? new Date(selectedLead.site_visit_datetime).toLocaleString() : 'Not Scheduled'}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status</label>
+
+                                        <select
+                                            className={`w-full px-2 py-1 rounded-lg text-xs font-bold outline-none border border-slate-200 cursor-pointer ${getStatusStyle(selectedLead.status)}`}
+                                            value={selectedLead.status}
+                                            onChange={(e) => handleStatusChange(selectedLead, e.target.value)}
+                                        >
+                                            <option value="new">New</option>
+                                            <option value="contacted">Contacted</option>
+                                            <option value="site_visit_scheduled">Site Visit Scheduled</option>
+                                            <option value="follow_up">Follow Up</option>
+                                            <option value="closed_won">Closed Won</option>
+                                            <option value="closed_lost">Closed Lost</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Lead Owner</label>
+                                        <select
+                                            className="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500 font-bold text-slate-700"
+                                            value={selectedLead.assigned_to || ''}
+                                            onChange={(e) => handleAssignLead(selectedLead.id, e.target.value)}
+                                        >
+                                            <option value="">Unassigned</option>
+                                            {salesExecutives.map(exec => (
+                                                <option key={exec.id} value={exec.id}>{exec.full_name || exec.email}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div className="pt-8 border-t border-slate-50 grid grid-cols-2 gap-6">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-2">Lead Source</label>
+                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                                        {getSourceIcon(selectedLead.source || '')}
+                                        {selectedLead.source || 'Direct'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-2">Dates</label>
+                                    <div className="space-y-1 text-[10px] font-bold text-slate-400">
+                                        <div className="flex justify-between">
+                                            <span>CREATED</span>
+                                            <span className="text-slate-600">{new Date(selectedLead.created_at).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span>MODIFIED</span>
+                                            <span className="text-slate-600">{selectedLead.last_modified_at ? new Date(selectedLead.last_modified_at).toLocaleDateString() : '—'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right Column: Conversation Activity Feed */}
+                        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col h-[600px]">
+                            <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#00a4bd]">Conversation</h3>
+
+                                <span className="text-[10px] font-bold text-slate-400">{activities.length} total events</span>
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
+                                {activities.length === 0 ? (
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-4 opacity-50">
+                                        <MessageSquare size={48} strokeWidth={1} />
+                                        <p className="text-sm font-medium">No interaction history yet</p>
+                                    </div>
+                                ) : activities.map((activity, idx) => (
+                                    <div key={idx} className="flex gap-4 group">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-[#0051A5] shadow-sm">
+                                                {activity.action?.includes('CREATE') ? <Plus size={14} /> :
+                                                 activity.action?.includes('STATUS') ? <Clock size={14} /> :
+                                                 <HistoryIcon size={14} />}
+
+                                            </div>
+                                            {idx !== activities.length - 1 && <div className="w-px h-full bg-slate-100"></div>}
+                                        </div>
+                                        <div className="flex-1 pb-6">
+                                            <div className="flex justify-between items-baseline mb-1">
+                                                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">{activity.action?.replace(/_/g, ' ')}</h4>
+                                                <span className="text-[10px] font-bold text-slate-400">{new Date(activity.created_at).toLocaleString()}</span>
+                                            </div>
+                                            <div className="text-sm text-slate-500 bg-slate-50/50 p-3 rounded-2xl border border-slate-50">
+                                                {typeof activity.changes === 'object' ? (
+                                                    Object.entries(activity.changes).map(([k, v]) => (
+                                                        <div key={k} className="flex justify-between gap-4">
+                                                            <span className="font-bold text-[10px] text-slate-400 uppercase">{k}:</span>
+                                                            <span className="truncate">{String(v)}</span>
+                                                        </div>
+                                                    ))
+                                                ) : activity.changes}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="p-4 bg-slate-50/50 border-t border-slate-50 space-y-4">
+                                <textarea
+                                    value={noteText}
+                                    onChange={(e) => setNoteText(e.target.value)}
+                                    placeholder="Type a note about this lead..."
+                                    className="w-full h-24 p-4 bg-white border border-slate-200 rounded-2xl resize-none outline-none focus:ring-2 focus:ring-[#0051A5]/20 focus:border-[#0051A5] transition-all text-sm font-medium"
+                                />
+                                <button 
+                                    onClick={() => navigate(`/leads/${selectedLead.id}/survey`)}
+                                    className="w-full bg-[#0051A5] text-white py-3 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#003d7a] transition-all shadow-lg mb-4 flex items-center justify-center gap-2"
                                 >
-                                    <Trash2 size={18} />
+                                    Start Site Survey
+                                </button>
+                                <button
+                                    onClick={handleSaveNote}
+                                    disabled={!noteText.trim()}
+                                    className="w-full bg-[#FF8A00] text-white py-3 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#e67c00] transition-all shadow-lg shadow-orange-500/10 disabled:opacity-50 disabled:shadow-none"
+                                >
+                                    Log Interaction
                                 </button>
                             </div>
-                        </div>
 
-                        <h3 className="text-lg font-bold text-slate-900 mb-1">{lead.name}</h3>
 
-                        {lead.status === 'site_visit_scheduled' && !lead.is_converted && (
-                            <button
-                                onClick={() => navigate(`/leads/${lead.id}/survey`)}
-                                className="w-full mt-2 mb-4 py-2 bg-purple-50 text-purple-700 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-purple-100 transition-all border border-purple-100"
-                            >
-                                <Camera size={16} />
-                                Start Site Survey
-                            </button>
-                        )}
-
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-4">
-                            {getSourceIcon(lead.source || '')}
-                            <span>Source: {lead.source || 'Direct'}</span>
-                        </div>
-
-                        <div className="space-y-4 mb-6">
-                            {/* Assignment Dropdown */}
-                            <div className="flex items-center gap-2">
-                                <UserCheck size={16} className="text-slate-400" />
-                                <select
-                                    className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500 flex-1"
-                                    value={lead.assigned_to || ''}
-                                    onChange={(e) => handleAssignLead(lead.id, e.target.value)}
-                                >
-                                    <option value="">Unassigned</option>
-                                    {salesExecutives.map(exec => (
-                                        <option key={exec.id} value={exec.id}>{exec.full_name || exec.email}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {lead.email && (
-                                <div className="flex items-center gap-3 text-sm text-slate-600">
-                                    <Mail size={16} className="text-slate-400" />
-                                    <span>{lead.email}</span>
-                                </div>
-                            )}
-                            {lead.phone && (
-                                <div className="flex items-center gap-3 text-sm text-slate-600">
-                                    <Phone size={16} className="text-slate-400" />
-                                    <span>{lead.phone}</span>
-                                </div>
-                            )}
-                            <div className="flex items-start gap-3 text-sm text-slate-600">
-                                <MessageSquare size={16} className="text-slate-400 mt-0.5 shrink-0" />
-                                <span className="line-clamp-2 italic text-slate-500">
-                                    {lead.notes || 'No notes added...'}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="pt-4 border-t border-slate-50 flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                            <div className="flex items-center gap-1">
-                                <Clock size={12} />
-                                {lead.created_at ? new Date(lead.created_at).toLocaleDateString() : 'N/A'}
-                            </div>
-                            {lead.is_converted && (
-                                <div className="flex items-center gap-1 text-green-600">
-                                    <CheckCircle size={12} />
-                                    Converted
-                                </div>
-                            )}
                         </div>
                     </div>
-                ))}
-            </div>
+                </div>
+            )}
+
 
             {/* Add Lead Modal */}
             {isAddModalOpen && (
@@ -429,14 +687,77 @@ const Leads = () => {
                                     </select>
                                 </div>
                                 <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Lead Type</label>
+                                    <select
+                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0051A5]/20 focus:border-[#0051A5] outline-none bg-white"
+                                        value={newLead.lead_type}
+                                        onChange={(e) => setNewLead({ ...newLead, lead_type: e.target.value as any })}
+                                    >
+                                        <option value="Residential">Residential</option>
+                                        <option value="Commercial">Commercial</option>
+                                        <option value="Agriculture">Agriculture</option>
+                                    </select>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5 uppercase tracking-wider">District</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0051A5]/20 focus:border-[#0051A5] outline-none"
+                                            value={newLead.district}
+                                            onChange={(e) => setNewLead({ ...newLead, district: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Pincode</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0051A5]/20 focus:border-[#0051A5] outline-none"
+                                            value={newLead.pincode}
+                                            onChange={(e) => setNewLead({ ...newLead, pincode: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Prop. KW</label>
+                                        <input
+                                            type="number"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0051A5]/20 focus:border-[#0051A5] outline-none"
+                                            value={newLead.proposed_kw}
+                                            onChange={(e) => setNewLead({ ...newLead, proposed_kw: Number(e.target.value) })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Monthly Bill (₹)</label>
+                                        <input
+                                            type="number"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0051A5]/20 focus:border-[#0051A5] outline-none"
+                                            value={newLead.last_month_bill}
+                                            onChange={(e) => setNewLead({ ...newLead, last_month_bill: Number(e.target.value) })}
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Site Visit</label>
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#00a4bd]/20 focus:border-[#00a4bd] outline-none"
+                                        value={newLead.site_visit_datetime}
+                                        onChange={(e) => setNewLead({ ...newLead, site_visit_datetime: e.target.value })}
+                                    />
+                                </div>
+                                <div>
                                     <label className="block text-sm font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Notes</label>
+
                                     <textarea
-                                        rows={3}
+                                        rows={2}
                                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#0051A5]/20 focus:border-[#0051A5] outline-none resize-none"
                                         value={newLead.notes}
                                         onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })}
                                     ></textarea>
                                 </div>
+
                                 <div className="flex gap-3 pt-4">
                                     <button
                                         type="button"
@@ -447,10 +768,11 @@ const Leads = () => {
                                     </button>
                                     <button
                                         type="submit"
-                                        className="flex-1 py-3 bg-[#0051A5] text-white rounded-xl font-bold hover:bg-[#003d7a] transition-all shadow-lg shadow-blue-900/20"
+                                        className="flex-1 py-3 bg-[#FF8A00] text-white rounded-xl font-bold hover:bg-[#e67c00] transition-all shadow-lg shadow-orange-900/20"
                                     >
                                         Save Lead
                                     </button>
+
                                 </div>
                             </form>
                         </div>
