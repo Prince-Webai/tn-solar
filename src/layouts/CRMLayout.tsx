@@ -11,7 +11,6 @@ import {
     PanelLeftOpen,
     Plus,
     UserCircle,
-    MessageSquare,
     Zap,
     PieChart
 } from 'lucide-react';
@@ -37,7 +36,6 @@ const CRMLayout = ({ children }: { children?: React.ReactNode }) => {
     const crmNavItems = [
         { icon: LayoutDashboard, label: 'CRM Dashboard', path: '/crm', active: true },
         { icon: Users, label: 'Leads', path: '/crm/contacts', active: true },
-        { icon: MessageSquare, label: 'Conversations', path: '/crm/conversations', active: true },
         { icon: PieChart, label: 'Analytics', path: '/crm/analytics', active: true },
         { icon: Zap, label: 'Automations', path: null, active: false },
     ];
