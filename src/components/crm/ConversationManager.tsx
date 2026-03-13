@@ -13,9 +13,12 @@ import {
     MessageCircle,
     MapPin,
     RotateCcw,
-    XCircle
+    XCircle,
+    Upload,
+    CheckCircle2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { supabase } from '../../lib/supabase';
 
 interface NoteEntry {
     type: string;
@@ -52,6 +55,7 @@ const ConversationManager = ({ lead, onUpdate }: ConversationManagerProps) => {
     const [showForm, setShowForm] = useState<string | null>(null);
     const [siteVisitData, setSiteVisitData] = useState<any>({});
     const [salesData, setSalesData] = useState<any>({});
+    const [uploadingField, setUploadingField] = useState<string | null>(null);
     
     const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -163,6 +167,41 @@ const ConversationManager = ({ lead, onUpdate }: ConversationManagerProps) => {
         }
         setSending(false);
     };
+    
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
+        const file = e.target.files?.[0];
+        if (!file || !lead) return;
+
+        setUploadingField(field);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${lead.id}/${field}_${Date.now()}.${fileExt}`;
+            const filePath = `lead-docs/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('documents')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('documents')
+                .getPublicUrl(filePath);
+
+            setSalesData((prev: any) => ({
+                ...prev,
+                [`${field}_url`]: publicUrl,
+                [`${field}_name`]: file.name
+            }));
+            
+            toast.success(`${field.replace(/_/g, ' ')} uploaded!`);
+        } catch (error: any) {
+            console.error('Error uploading file:', error);
+            toast.error(error.message || 'Failed to upload document');
+        } finally {
+            setUploadingField(null);
+        }
+    };
 
     const handleSendSalesForm = async () => {
         if (!lead) return;
@@ -173,12 +212,12 @@ const ConversationManager = ({ lead, onUpdate }: ConversationManagerProps) => {
             dob: salesData.dob,
             downpayment_amount: parseFloat(salesData.downpayment_amount) || 0,
             remaining_payment_type: salesData.remaining_payment_type,
-            aadhar_front_url: salesData.aadhar_front_name,
-            aadhar_back_url: salesData.aadhar_back_name,
-            eb_bill_url: salesData.eb_bill_name,
-            bank_docs_url: salesData.bank_docs_name,
-            downpayment_proof_url: salesData.payment_proof_name,
-            quotation_url: salesData.quotation_name
+            aadhar_front_url: salesData.aadhar_front_url,
+            aadhar_back_url: salesData.aadhar_back_url,
+            eb_bill_url: salesData.eb_bill_url,
+            bank_docs_url: salesData.bank_docs_url,
+            downpayment_proof_url: salesData.downpayment_proof_url,
+            quotation_url: salesData.quotation_url
         };
 
         const { error } = await dataService.updateLead(lead.id, updates);
@@ -438,9 +477,33 @@ const ConversationManager = ({ lead, onUpdate }: ConversationManagerProps) => {
                                 </select>
                             </div>
                         </div>
+
+                        {/* File Uploads */}
+                        <div className="grid grid-cols-2 gap-2 border-t border-slate-200 pt-3 mt-1">
+                            {[
+                                { label: 'Quotation', field: 'quotation' },
+                                { label: 'Aadhar Front', field: 'aadhar_front' },
+                                { label: 'Aadhar Back', field: 'aadhar_back' },
+                                { label: 'EB Bill', field: 'eb_bill' },
+                                { label: 'Bank Docs', field: 'bank_docs' },
+                                { label: 'Payment Proof', field: 'downpayment_proof' }
+                            ].map((doc) => (
+                                <div key={doc.field}>
+                                    <label className="text-[8px] font-bold text-slate-400 uppercase mb-0.5 block">{doc.label}</label>
+                                    <label className={`w-full flex items-center justify-between px-2 py-1 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors ${salesData[`${doc.field}_url`] ? 'border-green-200 bg-green-50/30' : ''}`}>
+                                        <span className="text-[9px] font-medium text-slate-500 truncate max-w-[80px]">
+                                            {uploadingField === doc.field ? 'Uploading...' : salesData[`${doc.field}_name`] || 'Upload'}
+                                        </span>
+                                        {salesData[`${doc.field}_url`] ? <CheckCircle2 size={10} className="text-green-500" /> : <Upload size={10} className="text-[#FF6B00]" />}
+                                        <input type="file" className="hidden" accept="image/*,.pdf" onChange={(e) => handleFileUpload(e, doc.field)} disabled={!!uploadingField} />
+                                    </label>
+                                </div>
+                            ))}
+                        </div>
+
                         <button 
-                            onClick={handleSendSalesForm} disabled={sending}
-                            className="w-full py-1.5 bg-[#FF6B00] text-white rounded-lg text-[10px] font-black uppercase hover:bg-[#e66000] transition-all"
+                            onClick={handleSendSalesForm} disabled={sending || !!uploadingField}
+                            className="w-full py-1.5 bg-[#FF6B00] text-white rounded-lg text-[10px] font-black uppercase hover:bg-[#e66000] transition-all flex items-center justify-center gap-2"
                         >
                             {sending ? 'Saving...' : 'Submit Sales Form'}
                         </button>

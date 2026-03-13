@@ -1,11 +1,11 @@
 {
-    "name": "Condon Dairy Services",
-    "short_name": "Condon Dairy",
+    "name": "TN Solar Services",
+    "short_name": "TN Solar",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
-    "theme_color": "#1e3a8a",
-    "description": "Condon Dairy Services - Job Management",
+    "theme_color": "#00a4bd",
+    "description": "TN Solar Services - CRM & Job Management",
     "icons": [
         {
             "src": "/logo.png",

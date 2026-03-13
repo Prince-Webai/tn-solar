@@ -13,7 +13,8 @@ import {
     Briefcase,
     Globe,
     FileText,
-    TrendingUp
+    TrendingUp,
+    ExternalLink
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { dataService } from "../../services/dataService";
@@ -153,6 +154,36 @@ const CRMLeadDetails = () => {
                             <InfoRow label="Site Visit Date & Time" value={lead.site_visit_datetime ? new Date(lead.site_visit_datetime).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''} icon={Clock} />
                             <InfoRow label="Last Modified Date" value={lead.last_modified_at ? new Date(lead.last_modified_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''} icon={Clock} />
                             <InfoRow label="Lead Source" value={lead.source} icon={Globe} />
+                            
+                            {/* Sales Form Data */}
+                            <div className="pt-4 border-t border-slate-100 mt-4">
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-[#FF6B00] mb-3">Sales Information</h4>
+                                <InfoRow label="Client DOB" value={lead.dob} icon={Calendar} />
+                                <InfoRow label="Downpayment" value={lead.downpayment_amount ? `₹${lead.downpayment_amount}` : ''} icon={TrendingUp} />
+                                <InfoRow label="Payment Mode" value={lead.remaining_payment_type} icon={Briefcase} />
+                                
+                                <div className="grid grid-cols-2 gap-2 mt-4">
+                                    {[
+                                        { label: 'Quotation', url: lead.quotation_url },
+                                        { label: 'Aadhar Front', url: lead.aadhar_front_url },
+                                        { label: 'Aadhar Back', url: lead.aadhar_back_url },
+                                        { label: 'EB Bill', url: lead.eb_bill_url },
+                                        { label: 'Bank Docs', url: lead.bank_docs_url },
+                                        { label: 'Payment Proof', url: lead.downpayment_proof_url }
+                                    ].map((doc, i) => doc.url ? (
+                                        <a 
+                                            key={i} 
+                                            href={doc.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="flex items-center justify-between p-2 bg-slate-50 border border-slate-100 rounded-lg hover:border-[#FF6B00]/30 transition-colors group"
+                                        >
+                                            <span className="text-[9px] font-bold text-slate-500 uppercase">{doc.label}</span>
+                                            <ExternalLink size={10} className="text-slate-300 group-hover:text-[#FF6B00]" />
+                                        </a>
+                                    ) : null)}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

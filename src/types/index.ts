@@ -194,6 +194,7 @@ export interface Lead {
     dob?: string;
     aadhar_front_url?: string;
     aadhar_back_url?: string;
+    eb_bill_url?: string;
     bank_docs_url?: string;
     downpayment_amount?: number;
     downpayment_proof_url?: string;
