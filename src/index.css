@@ -122,20 +122,30 @@ table tbody tr:hover {
 }
 
 /* Modern form inputs */
-input:focus,
-select:focus,
-textarea:focus {
-    border-color: var(--delaval-blue) !important;
-    box-shadow: 0 0 0 3px rgba(0, 81, 165, 0.1) !important;
-}
-
 /* Button active press effect */
 .btn:active {
     transform: scale(0.97) !important;
 }
 
-.btn-secondary {
-    @apply bg-white border border-slate-200 text-slate-700 hover:border-delaval-blue hover:text-delaval-blue;
+@layer components {
+    .btn-secondary {
+        @apply bg-white border border-slate-200 text-slate-700 hover:border-delaval-blue hover:text-delaval-blue;
+    }
+
+    .form-input-sm {
+        @apply w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs outline-none transition-all duration-200;
+    }
+
+    .form-input-sm:focus {
+        @apply border-[#00a4bd] ring-2 ring-[#00a4bd]/10;
+    }
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--delaval-blue) !important;
+    box-shadow: 0 0 0 3px rgba(0, 81, 165, 0.1) !important;
 }
 
 /* Hide scrollbar for specific containers but keep functionality */

@@ -10,9 +10,14 @@ import {
     Send,
     ChevronRight,
     User,
-    Mic,
     StickyNote,
-    CheckCircle
+    CheckCircle,
+    X,
+    Upload,
+    MessageCircle,
+    MapPin,
+    RotateCcw,
+    XCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -23,12 +28,14 @@ const STATUS_COLORS: Record<string, string> = {
     follow_up: 'bg-purple-100 text-purple-700',
     closed_won: 'bg-emerald-100 text-emerald-700',
     closed_lost: 'bg-red-100 text-red-700',
+    site_visit_completed: 'bg-green-100 text-green-700',
+    site_visit_cancelled: 'bg-rose-100 text-rose-700',
+    dropped: 'bg-slate-100 text-slate-700',
 };
 
-type NoteType = 'note' | 'call' | 'email';
 
 interface NoteEntry {
-    type: NoteType;
+    type: string;
     text: string;
     time: string;
     action?: string;
@@ -43,8 +50,13 @@ const CRMConversations = () => {
     const [loadingThread, setLoadingThread] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [noteText, setNoteText] = useState('');
-    const [noteType, setNoteType] = useState<NoteType>('note');
     const [sending, setSending] = useState(false);
+    
+    // New Form States
+    const [showForm, setShowForm] = useState<string | null>(null);
+    const [siteVisitData, setSiteVisitData] = useState<any>({});
+    const [salesData, setSalesData] = useState<any>({});
+    
     const bottomRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -80,15 +92,113 @@ const CRMConversations = () => {
             toast.error('Failed to save note');
         } else {
             const newEntry: NoteEntry = {
-                type: noteType,
+                type: 'note',
                 text: noteText,
                 time: new Date().toISOString(),
-                action: `LOG_${noteType.toUpperCase()}`
+                action: 'LOG_NOTE'
             };
             setActivities(prev => [...prev, newEntry]);
             setNoteText('');
             toast.success('Note logged!');
             setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        }
+        setSending(false);
+    };
+
+    const handleLogActivity = async (activityType: string) => {
+        if (!selectedLead) return;
+        setSending(true);
+        const action = `LOG_${activityType.toUpperCase().replace(/\s+/g, '_')}`;
+        const { error } = await dataService.updateLead(selectedLead.id, { notes: `Activity: ${activityType}` });
+        
+        if (!error) {
+            const newEntry: NoteEntry = {
+                type: 'note',
+                text: `${activityType}`,
+                time: new Date().toISOString(),
+                action: action
+            };
+            setActivities(prev => [...prev, newEntry]);
+            toast.success(`${activityType} logged!`);
+            setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        } else {
+            toast.error('Failed to log activity');
+        }
+        setSending(false);
+    };
+
+    const handleSendSiteVisit = async () => {
+        if (!selectedLead) return;
+        setSending(true);
+        
+        const visitDateTime = siteVisitData.date && siteVisitData.time 
+            ? `${siteVisitData.date}T${siteVisitData.time}` 
+            : undefined;
+
+        const updates: any = {
+            proposed_kw: parseFloat(siteVisitData.proposed_kw) || 0,
+            site_location: siteVisitData.site_location,
+            map_coordinates: siteVisitData.map_coordinates,
+            site_visit_datetime: visitDateTime,
+            status: 'site_visit_scheduled'
+        };
+
+        const { error } = await dataService.updateLead(selectedLead.id, updates);
+        
+        if (!error) {
+            const newEntry: NoteEntry = {
+                type: 'note',
+                text: 'Site visit booked',
+                time: new Date().toISOString(),
+                action: 'FORM_SITE_VISIT',
+                changes: updates
+            };
+            setActivities(prev => [...prev, newEntry]);
+            setShowForm(null);
+            setSiteVisitData({});
+            toast.success('Site visit scheduled!');
+            setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        } else {
+            toast.error('Failed to save site visit');
+        }
+        setSending(false);
+    };
+
+    const handleSendSalesForm = async () => {
+        if (!selectedLead) return;
+        setSending(true);
+
+        const updates: any = {
+            lead_type: salesData.lead_type,
+            dob: salesData.dob,
+            downpayment_amount: parseFloat(salesData.downpayment_amount) || 0,
+            remaining_payment_type: salesData.remaining_payment_type,
+            // In a real app, we'd upload files and get URLs here
+            aadhar_front_url: salesData.aadhar_front_name,
+            aadhar_back_url: salesData.aadhar_back_name,
+            eb_bill_url: salesData.eb_bill_name,
+            bank_docs_url: salesData.bank_docs_name,
+            downpayment_proof_url: salesData.payment_proof_name,
+            quotation_url: salesData.quotation_name
+        };
+
+        const { error } = await dataService.updateLead(selectedLead.id, updates);
+        
+        if (!error) {
+            const newEntry: NoteEntry = {
+                type: 'note',
+                text: 'Sales form submitted',
+                time: new Date().toISOString(),
+                action: 'FORM_SALES',
+                changes: updates
+            };
+            setActivities(prev => [...prev, newEntry]);
+            setShowForm(null);
+            setSalesData({});
+            toast.success('Sales form saved!');
+            setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        } else {
+            toast.error('Failed to save sales form');
         }
         setSending(false);
     };
@@ -100,18 +210,27 @@ const CRMConversations = () => {
     );
 
     const noteIcon = (type: string) => {
-        if (type === 'call' || type?.includes('CALL')) return <Phone size={14} />;
-        if (type === 'email' || type?.includes('EMAIL')) return <Mail size={14} />;
-        if (type?.includes('STATUS')) return <CheckCircle size={14} />;
+        const t = (type || '').toUpperCase();
+        if (t.includes('CALL')) return <Phone size={14} />;
+        if (t.includes('EMAIL')) return <Mail size={14} />;
+        if (t.includes('WHATSAPP')) return <MessageCircle size={14} />;
+        if (t.includes('SITE_VISIT')) return <MapPin size={14} />;
+        if (t.includes('CALLBACK')) return <RotateCcw size={14} />;
+        if (t.includes('DROP')) return <XCircle size={14} />;
+        if (t.includes('STATUS')) return <CheckCircle size={14} />;
         return <StickyNote size={14} />;
     };
 
     const noteColor = (type: string) => {
-        if (type === 'call' || type?.includes('CALL')) return 'bg-emerald-500';
-        if (type === 'email' || type?.includes('EMAIL')) return 'bg-blue-500';
-        if (type?.includes('STATUS')) return 'bg-amber-500';
-        if (type?.includes('CREATE')) return 'bg-[#00a4bd]';
-        return 'bg-purple-500';
+        const t = (type || '').toUpperCase();
+        if (t.includes('CALL')) return 'bg-emerald-500';
+        if (t.includes('EMAIL')) return 'bg-blue-500';
+        if (t.includes('WHATSAPP')) return 'bg-green-500';
+        if (t.includes('SITE_VISIT')) return 'bg-indigo-500';
+        if (t.includes('CALLBACK')) return 'bg-purple-500';
+        if (t.includes('DROP')) return 'bg-red-500';
+        if (t.includes('STATUS')) return 'bg-amber-500';
+        return 'bg-slate-500';
     };
 
     return (
@@ -214,7 +333,7 @@ const CRMConversations = () => {
                             <div className="text-center py-16 text-slate-300">
                                 <MessageSquare size={48} className="mx-auto mb-3 opacity-30" />
                                 <p className="font-bold text-slate-400">No conversation yet</p>
-                                <p className="text-sm mt-1 text-slate-400">Log a note, call, or email below to start.</p>
+                                <p className="text-sm mt-1 text-slate-400">Log an activity or form below to start.</p>
                             </div>
                         ) : activities.map((entry, idx) => (
                             <div key={idx} className="flex gap-3">
@@ -224,18 +343,26 @@ const CRMConversations = () => {
                                 <div className="flex-1 bg-slate-50 rounded-2xl rounded-tl-none px-4 py-3 border border-slate-100">
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                            {(entry.action || entry.type)?.replace(/_/g, ' ')}
+                                            {(entry.action || entry.type)?.replace(/LOG_|FORM_/, '').replace(/_/g, ' ')}
                                         </span>
                                         <span className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
                                             <Clock size={10} />
                                             {new Date(entry.time).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-slate-700 font-medium leading-relaxed">
-                                        {entry.text || (entry.changes && typeof entry.changes === 'object'
-                                            ? Object.entries(entry.changes).map(([k, v]) => `${k}: ${v}`).join(' • ')
-                                            : 'No details')}
-                                    </p>
+                                    <div className="text-sm text-slate-700 font-medium leading-relaxed">
+                                        {entry.text && <p>{entry.text}</p>}
+                                        {entry.changes && typeof entry.changes === 'object' && !entry.text && (
+                                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1">
+                                                {Object.entries(entry.changes).map(([k, v]) => (
+                                                    <div key={k} className="flex gap-2 min-w-0">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase shrink-0">{k.replace(/_/g, ' ')}:</span>
+                                                        <span className="truncate">{String(v)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -244,39 +371,174 @@ const CRMConversations = () => {
 
                     {/* Compose Bar */}
                     <div className="p-4 border-t border-slate-100 bg-white">
-                        {/* Type selector */}
-                        <div className="flex gap-2 mb-3">
-                            {(['note', 'call', 'email'] as NoteType[]).map(type => (
-                                <button
-                                    key={type}
-                                    onClick={() => setNoteType(type)}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black uppercase transition-all ${noteType === type ? 'bg-[#2D3E50] text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        {/* Selector Tabs */}
+                        <div className="flex gap-4 mb-4">
+                            <div className="relative group">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block px-1">Log Activity</label>
+                                <select 
+                                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-600 outline-none focus:border-[#00a4bd] cursor-pointer"
+                                    onChange={(e) => {
+                                        if (e.target.value) handleLogActivity(e.target.value);
+                                        e.target.value = '';
+                                    }}
                                 >
-                                    {type === 'note' && <StickyNote size={12} />}
-                                    {type === 'call' && <Mic size={12} />}
-                                    {type === 'email' && <Mail size={12} />}
-                                    {type}
+                                    <option value="">Select Activity...</option>
+                                    <option value="Phone call">📞 Phone call</option>
+                                    <option value="Email">📧 Email</option>
+                                    <option value="Whatsapp call">💬 Whatsapp call</option>
+                                    <option value="Whatsapp message">✉️ Whatsapp message</option>
+                                    <option value="Site visit booked">📅 Site visit booked</option>
+                                    <option value="Site visit completed">✅ Site visit completed</option>
+                                    <option value="Site visit cancelled">❌ Site visit cancelled</option>
+                                    <option value="Callback">🔄 Callback</option>
+                                    <option value="Drop">⚠️ Drop</option>
+                                </select>
+                            </div>
+
+                            <div className="relative group">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block px-1">Fill Form</label>
+                                <select 
+                                    className="bg-[#00a4bd]/5 border border-[#00a4bd]/20 rounded-xl px-3 py-2 text-xs font-bold text-[#00a4bd] outline-none focus:border-[#00a4bd] cursor-pointer"
+                                    onChange={(e) => setShowForm(e.target.value)}
+                                    value={showForm || ''}
+                                >
+                                    <option value="">Select Form...</option>
+                                    <option value="site_visit">Site Visit Booking Form</option>
+                                    <option value="sales">Sales Form</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Note Input */}
+                        {!showForm && (
+                            <div className="flex gap-3">
+                                <textarea
+                                    value={noteText}
+                                    onChange={e => setNoteText(e.target.value)}
+                                    placeholder="Type a note here..."
+                                    rows={2}
+                                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendNote(); } }}
+                                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-[#00a4bd] focus:ring-2 focus:ring-[#00a4bd]/10 resize-none transition-all"
+                                />
+                                <button
+                                    onClick={handleSendNote}
+                                    disabled={sending || !noteText.trim()}
+                                    className="px-4 bg-[#00a4bd] text-white rounded-xl hover:bg-[#008ba1] transition-all disabled:opacity-40 flex items-center justify-center shadow-lg shadow-[#00a4bd]/20"
+                                >
+                                    <Send size={18} />
                                 </button>
-                            ))}
-                        </div>
-                        <div className="flex gap-3">
-                            <textarea
-                                value={noteText}
-                                onChange={e => setNoteText(e.target.value)}
-                                placeholder={`Log a ${noteType}...`}
-                                rows={2}
-                                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendNote(); } }}
-                                className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-[#00a4bd] focus:ring-2 focus:ring-[#00a4bd]/10 resize-none transition-all"
-                            />
-                            <button
-                                onClick={handleSendNote}
-                                disabled={sending || !noteText.trim()}
-                                className="px-4 bg-[#00a4bd] text-white rounded-xl hover:bg-[#008ba1] transition-all disabled:opacity-40 flex items-center justify-center shadow-lg shadow-[#00a4bd]/20"
-                            >
-                                <Send size={18} />
-                            </button>
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-medium mt-2">Press Enter to send · Shift+Enter for new line</p>
+                            </div>
+                        )}
+
+                        {/* Site Visit Form */}
+                        {showForm === 'site_visit' && (
+                            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 animate-fadeIn">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-xs font-black uppercase tracking-widest text-[#00a4bd]">Site Visit Booking Form</h4>
+                                    <button onClick={() => setShowForm(null)} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Proposed KW</label>
+                                        <input type="number" step="0.5" className="form-input-sm" placeholder="e.g. 5" 
+                                            value={siteVisitData.proposed_kw || ''} onChange={e => setSiteVisitData({...siteVisitData, proposed_kw: e.target.value})} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Site Location</label>
+                                        <input type="text" className="form-input-sm" placeholder="Village/City" 
+                                            value={siteVisitData.site_location || ''} onChange={e => setSiteVisitData({...siteVisitData, site_location: e.target.value})} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Date</label>
+                                        <input type="date" className="form-input-sm" 
+                                            value={siteVisitData.date || ''} onChange={e => setSiteVisitData({...siteVisitData, date: e.target.value})} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Time</label>
+                                        <input type="time" className="form-input-sm" 
+                                            value={siteVisitData.time || ''} onChange={e => setSiteVisitData({...siteVisitData, time: e.target.value})} />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Map Location / Coordinates</label>
+                                        <input type="text" className="form-input-sm" placeholder="Paste map link or GPS coordinates" 
+                                            value={siteVisitData.map_coordinates || ''} onChange={e => setSiteVisitData({...siteVisitData, map_coordinates: e.target.value})} />
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={handleSendSiteVisit} disabled={sending}
+                                    className="w-full mt-4 py-2 bg-[#00a4bd] text-white rounded-xl text-xs font-black uppercase hover:bg-[#008ba1] transition-all"
+                                >
+                                    {sending ? 'Saving...' : 'Book Site Visit'}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Sales Form */}
+                        {showForm === 'sales' && (
+                            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 animate-fadeIn">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-xs font-black uppercase tracking-widest text-[#FF6B00]">Sales Form</h4>
+                                    <button onClick={() => setShowForm(null)} className="text-slate-400 hover:text-slate-600"><X size={16} /></button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Sale Type</label>
+                                        <select className="form-input-sm" value={salesData.lead_type || ''} onChange={e => setSalesData({...salesData, lead_type: e.target.value})}>
+                                            <option value="">Select...</option>
+                                            <option value="Residential">Residential</option>
+                                            <option value="Commercial">Commercial</option>
+                                            <option value="Agriculture">Agriculture</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Client DOB</label>
+                                        <input type="date" className="form-input-sm" value={salesData.dob || ''} onChange={e => setSalesData({...salesData, dob: e.target.value})} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Downpayment Amt</label>
+                                        <input type="number" className="form-input-sm" placeholder="₹ Amount" value={salesData.downpayment_amount || ''} onChange={e => setSalesData({...salesData, downpayment_amount: e.target.value})} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Remaining Payment</label>
+                                        <select className="form-input-sm" value={salesData.remaining_payment_type || ''} onChange={e => setSalesData({...salesData, remaining_payment_type: e.target.value})}>
+                                            <option value="">Select...</option>
+                                            <option value="Loan">Loan</option>
+                                            <option value="Full Payment">Full Payment</option>
+                                        </select>
+                                    </div>
+                                    
+                                    {/* Uploads */}
+                                    <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-3 gap-3">
+                                        {[
+                                            { label: 'Quotation', id: 'quotation' },
+                                            { label: 'Aadhar Front', id: 'aadhar_front' },
+                                            { label: 'Aadhar Back', id: 'aadhar_back' },
+                                            { label: 'EB Bill', id: 'eb_bill' },
+                                            { label: 'Bank Docs', id: 'bank_docs' },
+                                            { label: 'Payment Proof', id: 'payment_proof' }
+                                        ].map(u => (
+                                            <div key={u.id}>
+                                                <label className="text-[9px] font-black text-slate-400 uppercase mb-1 block">{u.label}</label>
+                                                <div className="relative group overflow-hidden bg-white border border-slate-200 rounded-lg p-1.5 flex items-center justify-between">
+                                                    <span className="text-[10px] text-slate-400 truncate pr-2">{salesData[`${u.id}_name`] || 'No file selected'}</span>
+                                                    <button className="shrink-0 p-1 bg-slate-100 text-[#FF6B00] rounded hover:bg-[#FF6B00] hover:text-white transition-all"><Upload size={10} /></button>
+                                                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) setSalesData({...salesData, [u.id]: file, [`${u.id}_name`]: file.name});
+                                                    }} />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={handleSendSalesForm} disabled={sending}
+                                    className="w-full mt-4 py-2 bg-[#FF6B00] text-white rounded-xl text-xs font-black uppercase hover:bg-[#e66000] transition-all shadow-lg shadow-[#FF6B00]/20"
+                                >
+                                    {sending ? 'Saving...' : 'Submit Sales Form'}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             ) : (

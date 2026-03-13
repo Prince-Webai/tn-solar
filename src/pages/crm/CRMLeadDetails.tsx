@@ -9,13 +9,9 @@ import {
     History,
     Save,
     ArrowLeft,
-    FileText,
-    Briefcase,
-    Euro,
     MessageSquare,
     Paperclip,
     Zap,
-    TrendingUp,
     Edit3,
     X,
     Check
@@ -29,9 +25,11 @@ const STATUS_OPTIONS = [
     { value: 'contacted', label: 'Contacted', color: 'bg-amber-100 text-amber-800' },
     { value: 'site_visit_scheduled', label: 'Site Visit Scheduled', color: 'bg-indigo-100 text-indigo-800' },
     { value: 'site_visit_completed', label: 'Site Visit Completed', color: 'bg-emerald-100 text-emerald-800'},
+    { value: 'site_visit_cancelled', label: 'Site Visit Cancelled', color: 'bg-rose-100 text-rose-800'},
     { value: 'follow_up', label: 'Follow Up', color: 'bg-purple-100 text-purple-800' },
     { value: 'closed_won', label: 'Closed Won', color: 'bg-emerald-100 text-emerald-800' },
-    { value: 'closed_lost', label: 'Closed Lost', color: 'bg-red-100 text-red-800' }
+    { value: 'closed_lost', label: 'Closed Lost', color: 'bg-red-100 text-red-800' },
+    { value: 'dropped', label: 'Dropped', color: 'bg-slate-100 text-slate-800' }
 ];
 
 const SOURCE_OPTIONS = ['Web', 'Phone', 'Referral', 'Facebook', 'WhatsApp', 'Walk-in', 'Other'];
@@ -270,11 +268,11 @@ const CRMLeadDetails = () => {
                 </div>
             </div>
 
-            {/* 3-Column Workspace */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* 2-Column Workspace */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
                 {/* Left Column: Info & Attributes */}
-                <div className="lg:col-span-3 space-y-6">
+                <div className="space-y-6">
                     <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-[#00a4bd]">
@@ -325,6 +323,63 @@ const CRMLeadDetails = () => {
                                     value={lead.source || ''}
                                     options={SOURCE_OPTIONS.map(s => ({ value: s, label: s }))}
                                     onSave={(val) => updateField('source', val)}
+                                />
+                            </div>
+                            <div className="pt-3">
+                                <EditableField
+                                    label="Lead Owner"
+                                    value={lead.lead_owner || ''}
+                                    onSave={(val) => updateField('lead_owner', val)}
+                                />
+                            </div>
+                            <div className="pt-3">
+                                <EditableField
+                                    label="Lead Type"
+                                    value={lead.lead_type || ''}
+                                    options={[
+                                        { value: 'Residential', label: 'Residential' },
+                                        { value: 'Commercial', label: 'Commercial' },
+                                        { value: 'Agriculture', label: 'Agriculture' }
+                                    ]}
+                                    onSave={(val) => updateField('lead_type', val)}
+                                />
+                            </div>
+                            <div className="pt-3">
+                                <EditableField
+                                    label="District"
+                                    value={lead.district || ''}
+                                    onSave={(val) => updateField('district', val)}
+                                />
+                            </div>
+                            <div className="pt-3">
+                                <EditableField
+                                    label="Pincode"
+                                    value={lead.pincode || ''}
+                                    onSave={(val) => updateField('pincode', val)}
+                                />
+                            </div>
+                            <div className="pt-3">
+                                <EditableField
+                                    label="Last Month Bill (₹)"
+                                    value={lead.last_month_bill?.toString() || ''}
+                                    type="number"
+                                    onSave={(val) => updateField('last_month_bill', Number(val) || 0)}
+                                />
+                            </div>
+                            <div className="pt-3">
+                                <EditableField
+                                    label="Proposed KW"
+                                    value={lead.proposed_kw?.toString() || ''}
+                                    type="number"
+                                    onSave={(val) => updateField('proposed_kw', Number(val) || 0)}
+                                />
+                            </div>
+                            <div className="pt-3">
+                                <EditableField
+                                    label="Site Visit Date & Time"
+                                    type="datetime-local"
+                                    value={lead.site_visit_datetime || ''}
+                                    onSave={(val) => updateField('site_visit_datetime', val)}
                                 />
                             </div>
                             <div className="pt-3">
@@ -393,8 +448,8 @@ const CRMLeadDetails = () => {
                     </div>
                 </div>
 
-                {/* Center Column: Engagement Timeline */}
-                <div className="lg:col-span-6 space-y-6">
+                {/* Right Column: Engagement Timeline */}
+                <div className="space-y-6">
                     {/* Note Composer */}
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                         <div className="flex items-center bg-slate-50 border-b border-slate-100">
@@ -463,73 +518,6 @@ const CRMLeadDetails = () => {
                                     <p className="text-xs mt-1">Changes to this lead will appear here.</p>
                                 </div>
                             )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right Column */}
-                <div className="lg:col-span-3 space-y-6">
-                    {/* Quick Stats */}
-                    <div className="bg-gradient-to-br from-[#2D3E50] to-[#1a2535] rounded-3xl p-6 text-white shadow-xl">
-                        <div className="flex items-center gap-2 mb-6">
-                            <TrendingUp size={18} className="text-[#00a4bd]" />
-                            <h3 className="font-black text-white">Lead Score</h3>
-                        </div>
-                        <div className="text-5xl font-black text-[#00a4bd] mb-2">
-                            {lead.status === 'closed_won' ? '100' :
-                             lead.status === 'follow_up' ? '75' :
-                             lead.status === 'site_visit_scheduled' ? '60' :
-                             lead.status === 'contacted' ? '40' : '20'}
-                        </div>
-                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">out of 100</p>
-                        <div className="mt-4 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-[#00a4bd] rounded-full transition-all duration-500"
-                                style={{ width: lead.status === 'closed_won' ? '100%' : lead.status === 'follow_up' ? '75%' : lead.status === 'site_visit_scheduled' ? '60%' : lead.status === 'contacted' ? '40%' : '20%' }}
-                            />
-                        </div>
-                        <p className="text-[10px] mt-3 text-slate-400 font-bold uppercase tracking-widest">
-                            Created {new Date(lead.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </p>
-                    </div>
-
-                    {/* Related Records */}
-                    <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
-                        <h3 className="font-black text-slate-900 mb-6">Related Records</h3>
-                        <div className="space-y-3 opacity-60">
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-500 flex items-center justify-center">
-                                        <Briefcase size={16} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-black text-slate-700 leading-none">Job Orders</p>
-                                        <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Coming Soon</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center">
-                                        <FileText size={16} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-black text-slate-700 leading-none">Quotation</p>
-                                        <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Coming Soon</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center">
-                                        <Euro size={16} />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-black text-slate-700 leading-none">Invoice</p>
-                                        <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Coming Soon</p>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>

@@ -45,8 +45,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 { icon: Wrench, label: 'Service Jobs', path: '/jobs', roles: ['Admin', 'Manager', 'Coordinator', 'Sales Executive', 'Installer', 'Surveyor'] },
                 { icon: Kanban, label: 'Pipeline', path: '/pipeline', roles: ['Admin', 'Manager', 'Coordinator'] },
                 { icon: LayoutDashboard, label: 'CRM Workspace (New)', path: '/crm', roles: ['Admin', 'Manager', 'Sales Executive', 'Coordinator'] },
-                { icon: GitMerge, label: 'Lead Pipeline', path: '/leads/pipeline', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
-                { icon: Users, label: 'Leads', path: '/leads', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
+                { icon: GitMerge, label: 'Lead Pipeline', path: '/crm/pipeline', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
+                { icon: Users, label: 'Leads', path: '/crm/contacts', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
                 { icon: Users, label: 'Customers', path: '/customers', roles: ['Admin', 'Sales Executive', 'Manager', 'Accounts'] },
             ]
         },
@@ -84,9 +84,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     const mobileNavItems = [
         { icon: LayoutDashboard, label: 'Home', path: '/', roles: ['Admin', 'Sales Executive', 'Surveyor', 'Manager', 'Accounts', 'MNRE Executive', 'Loan Executive', 'Procurement Team', 'Logistics', 'Installer', 'Net Meter Executive', 'Post Sales Support', 'Coordinator'] },
         { icon: Briefcase, label: 'Solar', path: '/projects', roles: ['Admin', 'Manager', 'Coordinator', 'Sales Executive', 'Installer', 'Surveyor'] },
-        { icon: UserPlus, label: 'Leads', path: '/leads', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
+        { icon: UserPlus, label: 'Leads', path: '/crm/contacts', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
         { icon: MapPin, label: 'Surveys', path: '/surveys', roles: ['Admin', 'Surveyor'] },
-        { icon: GitMerge, label: 'Lead Pipe', path: '/leads/pipeline', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
+        { icon: GitMerge, label: 'Lead Pipe', path: '/crm/pipeline', roles: ['Admin', 'Sales Executive', 'Manager', 'Coordinator'] },
         { icon: Kanban, label: 'Pipeline', path: '/pipeline', roles: ['Admin', 'Manager', 'Coordinator'] },
         { icon: Users, label: 'Customers', path: '/customers', roles: ['Admin', 'Sales Executive', 'Manager', 'Accounts'] },
     ];

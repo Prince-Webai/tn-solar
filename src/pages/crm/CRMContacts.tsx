@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import {
-    Search, Plus, Trash2, ChevronDown, ChevronUp, Phone, Mail,
-    MapPin, Save, X, Calendar, Edit3, Check, ArrowRight,
-    Settings, Type, Hash, CheckSquare
+    Search, Plus, Trash2, ChevronDown, Phone, Mail,
+    MapPin, Save, X, Calendar, Edit3, Check,
+    Settings, Type, Hash, CheckSquare, Eye
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { Lead } from '../../types';
@@ -118,12 +118,7 @@ const CRMContacts = () => {
 
     useEffect(() => { loadData(); }, []);
 
-    // When a row expands, preload its custom field values
-    const handleExpand = (lead: Lead) => {
-        if (expandedId === lead.id) { setExpandedId(null); return; }
-        setExpandedId(lead.id);
-        setCustomFieldValues(lead.custom_fields || {});
-    };
+
 
     // Update a core lead field inline
     const updateLeadField = async (leadId: string, field: string, value: any) => {
@@ -263,10 +258,11 @@ const CRMContacts = () => {
             </div>
 
             {/* ── Leads Table ── */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden overflow-x-auto relative">
+                <div className="min-w-[1800px]">
                 {/* Table Header */}
-                <div className="grid grid-cols-[2fr_1.5fr_1.5fr_1.2fr_60px] bg-slate-50 border-b border-slate-200 px-5 py-3">
-                    {['Lead Name', 'Contact', 'Status', 'Created', ''].map(h => (
+                <div className="grid grid-cols-[50px_200px_150px_150px_150px_120px_120px_120px_100px_100px_120px_120px_180px_120px_120px_60px] bg-slate-50 border-b border-slate-200 px-5 py-3">
+                    {['View', 'Lead Name', 'Contact', 'Phone / Mobile', 'Status', 'Lead Owner', 'Created Date', 'District', 'Pincode', 'Last Bill', 'Proposed KW', 'Lead Type', 'Site Visit', 'Modified', 'Source', ''].map(h => (
                         <div key={h} className="text-[10px] font-black uppercase tracking-widest text-slate-500">{h}</div>
                     ))}
                 </div>
@@ -286,29 +282,37 @@ const CRMContacts = () => {
                     return (
                         <div key={lead.id} className={`border-b border-slate-100 transition-all ${isExpanded ? 'bg-blue-50/30' : 'hover:bg-slate-50'}`}>
                             {/* ── Row ── */}
-                            <div className="grid grid-cols-[2fr_1.5fr_1.5fr_1.2fr_60px] px-5 py-4 items-center gap-2">
+                            <div className="grid grid-cols-[50px_200px_150px_150px_150px_120px_120px_120px_100px_100px_120px_120px_180px_120px_120px_60px] px-5 py-4 items-center gap-2">
+                                {/* View Option */}
+                                <div>
+                                    <button onClick={() => navigate(`/crm/leads/${lead.id}`)} title="View options"
+                                        className="p-1.5 rounded-lg text-slate-400 hover:bg-[#00a4bd]/10 hover:text-[#00a4bd] transition-all">
+                                        <Eye size={18} />
+                                    </button>
+                                </div>
                                 {/* Name */}
-                                <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex items-center gap-3 min-w-0 pr-2">
                                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#00a4bd] to-[#2D3E50] flex items-center justify-center text-white font-black text-sm shrink-0">
-                                        {lead.name.charAt(0).toUpperCase()}
+                                        {lead.name?.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="font-bold text-slate-900 truncate">{lead.name}</p>
-                                        {lead.source && <p className="text-[10px] text-slate-400 font-bold uppercase">{lead.source}</p>}
+                                        <p className="font-bold text-slate-900 truncate" title={lead.name}>{lead.name}</p>
                                     </div>
                                 </div>
                                 {/* Contact */}
-                                <div className="text-xs font-medium text-slate-600 space-y-1 min-w-0">
-                                    {lead.phone && <div className="flex items-center gap-1.5 truncate"><Phone size={11} className="text-slate-400 shrink-0" />{lead.phone}</div>}
-                                    {lead.email && <div className="flex items-center gap-1.5 truncate"><Mail size={11} className="text-slate-400 shrink-0" /><span className="truncate">{lead.email}</span></div>}
-                                    {!lead.phone && !lead.email && <span className="text-slate-300 italic">No contact</span>}
+                                <div className="text-xs font-medium text-slate-600 min-w-0 truncate" title={lead.contact_name || lead.email}>
+                                    {lead.contact_name || lead.email || <span className="text-slate-300 italic">N/A</span>}
+                                </div>
+                                {/* Phone */}
+                                <div className="text-xs font-medium text-slate-600 truncate">
+                                    {lead.phone || <span className="text-slate-300 italic">N/A</span>}
                                 </div>
                                 {/* Status dropdown */}
                                 <div onClick={e => e.stopPropagation()}>
-                                    <div className="relative inline-block w-full max-w-[160px]">
+                                    <div className="relative inline-block w-full max-w-[140px]">
                                         <select value={lead.status}
                                             onChange={async e => { await updateLeadField(lead.id, 'status', e.target.value); }}
-                                            className={`w-full appearance-none text-xs font-bold px-3 py-2 pr-8 rounded-lg cursor-pointer outline-none border ${status?.color || 'bg-slate-100 text-slate-700 border-slate-200'} focus:ring-2 focus:ring-[#00a4bd]`}>
+                                            className={`w-full appearance-none text-xs font-bold px-3 py-1.5 pr-8 rounded-lg cursor-pointer outline-none border ${status?.color || 'bg-slate-100 text-slate-700 border-slate-200'} focus:ring-2 focus:ring-[#00a4bd]`}>
                                             {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                                         </select>
                                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 opacity-60">
@@ -316,27 +320,55 @@ const CRMContacts = () => {
                                         </div>
                                     </div>
                                 </div>
-                                {/* Date */}
-                                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
-                                    <Calendar size={11} />
+                                {/* Lead Owner */}
+                                <div className="text-xs font-medium text-slate-600 truncate">
+                                    {lead.lead_owner || <span className="text-slate-300 italic">None</span>}
+                                </div>
+                                {/* Created Date */}
+                                <div className="text-xs font-medium text-slate-500 whitespace-nowrap">
                                     {new Date(lead.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}
+                                </div>
+                                {/* District */}
+                                <div className="text-xs font-medium text-slate-600 truncate">
+                                    {lead.district || <span className="text-slate-300 italic">-</span>}
+                                </div>
+                                {/* Pincode */}
+                                <div className="text-xs font-medium text-slate-600 truncate">
+                                    {lead.pincode || <span className="text-slate-300 italic">-</span>}
+                                </div>
+                                {/* Last Month Bill */}
+                                <div className="text-xs font-medium text-slate-600 truncate">
+                                    {lead.last_month_bill != null ? `₹${lead.last_month_bill}` : <span className="text-slate-300 italic">-</span>}
+                                </div>
+                                {/* Proposed KW */}
+                                <div className="text-xs font-medium text-slate-600 truncate">
+                                    {lead.proposed_kw != null ? `${lead.proposed_kw} kW` : <span className="text-slate-300 italic">-</span>}
+                                </div>
+                                {/* Lead Type */}
+                                <div className="text-xs font-medium text-slate-600 truncate">
+                                    {lead.lead_type || <span className="text-slate-300 italic">-</span>}
+                                </div>
+                                {/* Site Visit Date & Time */}
+                                <div className="text-xs font-medium text-slate-500 truncate" title={lead.site_visit_datetime}>
+                                    {lead.site_visit_datetime ? new Date(lead.site_visit_datetime).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : <span className="text-slate-300 italic">-</span>}
+                                </div>
+                                {/* Last Modified */}
+                                <div className="text-xs font-medium text-slate-500 whitespace-nowrap">
+                                    {lead.last_modified_at ? new Date(lead.last_modified_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : '-'}
+                                </div>
+                                {/* Source */}
+                                <div className="text-[10px] text-slate-600 font-bold uppercase truncate">
+                                    {lead.source || 'Web'}
                                 </div>
                                 {/* Actions */}
                                 <div className="flex items-center gap-1 justify-end">
-                                    <button onClick={() => navigate(`/crm/leads/${lead.id}`)} title="View full details"
-                                        className="p-1.5 rounded-lg text-slate-400 hover:bg-[#00a4bd]/10 hover:text-[#00a4bd] transition-all">
-                                        <ArrowRight size={15} />
-                                    </button>
-                                    <button onClick={() => handleExpand(lead)} title="Quick Edit details"
-                                        className={`p-1.5 rounded-lg transition-all ${isExpanded ? 'bg-[#00a4bd] text-white' : 'text-slate-400 hover:bg-slate-100 hover:text-[#00a4bd]'}`}>
-                                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                    </button>
                                     <button onClick={() => handleDelete(lead)} title="Delete lead"
                                         className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all">
                                         <Trash2 size={15} />
                                     </button>
                                 </div>
                             </div>
+
 
                             {/* ── Expanded Detail Panel ── */}
                             {isExpanded && (
@@ -412,6 +444,7 @@ const CRMContacts = () => {
                         </div>
                     );
                 })}
+                </div>
             </div>
 
             {/* ── Create Lead Modal ── */}

@@ -173,7 +173,7 @@ export interface Lead {
     email?: string;
     phone?: string;
     source?: string;
-    status: 'new' | 'contacted' | 'site_visit_scheduled' | 'site_visit_completed' | 'follow_up' | 'closed_won' | 'closed_lost' | 'converted';
+    status: 'new' | 'contacted' | 'site_visit_scheduled' | 'site_visit_completed' | 'site_visit_cancelled' | 'follow_up' | 'closed_won' | 'closed_lost' | 'converted' | 'dropped';
     notes?: string;
     is_converted?: boolean;
     converted_at?: string;
@@ -189,6 +189,16 @@ export interface Lead {
     lead_owner?: string;
     last_modified_at?: string;
     site_visit_datetime?: string;
+    site_location?: string;
+    map_coordinates?: string;
+    dob?: string;
+    aadhar_front_url?: string;
+    aadhar_back_url?: string;
+    bank_docs_url?: string;
+    downpayment_amount?: number;
+    downpayment_proof_url?: string;
+    remaining_payment_type?: 'Loan' | 'Full Payment';
+    quotation_url?: string;
 }
 
 

@@ -17,7 +17,7 @@ import Settings from './pages/Settings'
 import JobDetails from './pages/JobDetails'
 import Projects from './pages/Projects'
 import ProjectDetails from './pages/ProjectDetails'
-import Leads from './pages/Leads'
+// import Leads from './pages/Leads'
 import CRMLayout from './layouts/CRMLayout'
 import CRMDashboard from './pages/crm/CRMDashboard'
 import CRMContacts from './pages/crm/CRMContacts'
@@ -25,8 +25,8 @@ import CRMPipeline from './pages/crm/CRMPipeline'
 import CRMLeadDetails from './pages/crm/CRMLeadDetails'
 import CRMConversations from './pages/crm/CRMConversations'
 import CRMAnalytics from './pages/crm/CRMAnalytics'
-import LeadPipeline from './pages/LeadPipeline'
-import LeadDetails from './pages/LeadDetails'
+// import LeadPipeline from './pages/LeadPipeline'
+// import LeadDetails from './pages/LeadDetails'
 import CustomFieldSettings from './pages/CustomFieldSettings'
 import Login from './pages/Login'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -142,18 +142,18 @@ function App() {
                     <Route path="/leads" element={
                         <ProtectedRoute>
                             <RoleGuard allowedRoles={['Admin', 'Manager', 'Coordinator', 'Sales Executive']}>
-                                <Layout>
-                                    <Leads />
-                                </Layout>
+                                <CRMLayout>
+                                    <CRMContacts />
+                                </CRMLayout>
                             </RoleGuard>
                         </ProtectedRoute>
                     } />
                     <Route path="/leads/pipeline" element={
                         <ProtectedRoute>
                             <RoleGuard allowedRoles={['Admin', 'Manager', 'Coordinator', 'Sales Executive']}>
-                                <Layout>
-                                    <LeadPipeline />
-                                </Layout>
+                                <CRMLayout>
+                                    <CRMPipeline />
+                                </CRMLayout>
                             </RoleGuard>
                         </ProtectedRoute>
                     } />
@@ -169,9 +169,9 @@ function App() {
                     <Route path="/leads/:id" element={
                         <ProtectedRoute>
                             <RoleGuard allowedRoles={['Admin', 'Manager', 'Coordinator', 'Sales Executive']}>
-                                <Layout>
-                                    <LeadDetails />
-                                </Layout>
+                                <CRMLayout>
+                                    <CRMLeadDetails />
+                                </CRMLayout>
                             </RoleGuard>
                         </ProtectedRoute>
                     } />
